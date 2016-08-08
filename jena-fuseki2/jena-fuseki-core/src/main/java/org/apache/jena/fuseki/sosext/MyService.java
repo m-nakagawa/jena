@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.mgt;
+package org.apache.jena.fuseki.sosext;
 
 import static org.apache.jena.riot.WebContent.charsetUTF8 ;
 import static org.apache.jena.riot.WebContent.contentTypeTextPlain ;
@@ -106,7 +106,11 @@ public class MyService extends WebSocketServlet
 	// Ping is special.
     // To avoid excessive logging and id allocation for a "noise" operation,
     // this is a raw servlet.
-    public MyService() { super() ; } 
+    public MyService() {
+    	super() ;
+    	MyQueryEngine.register();
+        Fuseki.serverLog.info("myservice :: MyQueryEngine added.");
+    } 
     
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
@@ -226,7 +230,7 @@ public class MyService extends WebSocketServlet
             ServletOutputStream out = response.getOutputStream() ;
             out.println(DateTimeUtils.nowAsXSDDateTimeString());
         } catch (IOException ex) {
-            Fuseki.serverLog.warn("ping :: IOException :: "+ex.getMessage());
+            Fuseki.serverLog.warn("myservice :: IOException :: "+ex.getMessage());
         }
     }
 }

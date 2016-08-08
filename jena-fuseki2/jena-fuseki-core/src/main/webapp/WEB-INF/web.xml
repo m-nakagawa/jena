@@ -169,7 +169,7 @@
   
   <servlet><!-- MNakagawa -->
     <servlet-name>MyServlet</servlet-name>
-    <servlet-class>org.apache.jena.fuseki.mgt.MyService</servlet-class>
+    <servlet-class>org.apache.jena.fuseki.sosext.MyService</servlet-class>
   </servlet>
 
   <servlet>

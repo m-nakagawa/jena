@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.mgt;
+package org.apache.jena.fuseki.sosext;
 
 import java.io.IOException;
 
