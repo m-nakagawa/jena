@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <!-- MNakagawa -->
+  <head>
+    <title>test websocket</title>
+  </head>
+  <body>
+    <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!--<script src="js/jquery-1.11.3.min.js"></script>-->
+    <script type="text/javascript">
+var ws = new WebSocket('ws://localhost:3030/my');
+ws.onopen = function () {
+    console.log("Connecting is success!!");
+    ws.send("Hello world!");
+};
+
+ws.onmessage = function (me) {
+    var receivedData = me.data;
+    console.log("Message is exists!!");
+    console.log("recievedData: " + receivedData);
+    $("div#w1").text(receivedData);
+};
+    </script>
+
+   <p>test</p>
+   <p><div  id="w1"></div></p>
+   </body>
+</html>

@@ -167,6 +167,11 @@
     <servlet-class>org.apache.jena.fuseki.mgt.ActionPing</servlet-class>
   </servlet>
   
+  <servlet><!-- MNakagawa -->
+    <servlet-name>MyServlet</servlet-name>
+    <servlet-class>org.apache.jena.fuseki.mgt.MyService</servlet-class>
+  </servlet>
+
   <servlet>
     <servlet-name>BackupListServlet</servlet-name>
     <servlet-class>org.apache.jena.fuseki.mgt.ActionBackupList</servlet-class>
@@ -190,6 +195,11 @@
   <servlet-mapping>
     <servlet-name>PingServlet</servlet-name>
     <url-pattern>/$/ping</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping><!-- MNakagawa -->
+    <servlet-name>MyServlet</servlet-name>
+    <url-pattern>/my/*</url-pattern>
   </servlet-mapping>
   
   <servlet>

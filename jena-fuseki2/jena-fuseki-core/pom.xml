@@ -72,6 +72,11 @@
       <version>${ver.jetty}</version>
     </dependency>
 
+	<dependency><!-- MNakagawa -->
+	    <groupId>org.eclipse.jetty.websocket</groupId>
+	    <artifactId>javax-websocket-server-impl</artifactId>
+	    <version>9.3.9.v20160517</version>
+	</dependency>
     <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
