@@ -178,14 +178,14 @@ public class MyService extends WebSocketServlet
                 //SPARQLResult result = executeQuery(action, qExec, query, queryStringLog) ;
                 // Deals with exceptions itself.
                 //sendResults(action, result, query.getPrologue()) ;
-            	System.out.println("RS: "+rs.toString());
+            	System.err.println("RS: "+rs.toString());
             	while(rs.hasNext()){
             		QuerySolution s = rs.next();
             		Iterator<String> n = s.varNames();
             		while(n.hasNext()){
             			String name = n.next();
             			RDFNode nd = s.get(name);
-            			System.out.println(name+":"+nd.toString());
+            			System.err.println(name+":"+nd.toString());
             		}
             	}
             }
