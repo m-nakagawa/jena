@@ -105,6 +105,7 @@ public class ResultSetCheckCondition implements ResultSet
         if ( ! condition.check()  ) {
             throw new ARQException("ResultSet no longer valid (QueryExecution has been closed)") ;    
         }
+        // MNakagawa
     }
 
 

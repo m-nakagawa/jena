@@ -128,7 +128,8 @@ public class MyService extends WebSocketServlet
         doCommon(req, resp); 
     }
 
-    //String queryString ="SELECT * WHERE { ?a ?b ?c . }"; 
+    String queryString ="SELECT * WHERE { ?a ?b ?c . }";
+    /*
     String queryString = "#日本語\n"
     		+"PREFIX : <http://bizar.aitc.jp/ns/fos/0.1/>\n"
     		+"PREFIX ha: <http://bizar.aitc.jp/ns/fos/0.1/人間API/>\n"
@@ -143,7 +144,7 @@ public class MyService extends WebSocketServlet
     		+"?room :在室 ?person .\n"
     		+"}}}\n"
     		;
-    
+    */
     private void test(){
         DataAccessPoint dataAccessPoint ;
         DataService dSrv ;

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.jena.atlas.lib.Alarm ;
 import org.apache.jena.atlas.lib.AlarmClock;
 import org.apache.jena.atlas.logging.Log;
+import org.apache.jena.graph.MyTriple;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.* ;
@@ -87,6 +88,8 @@ public class QueryExecutionBase implements QueryExecution
     }
     
     private void init() {
+    	MyTriple.freeze(); // MNakagawa  外部情報を凍結  close()をみよ
+    	
         DatasetGraph dsg = (dataset == null) ? null : dataset.asDatasetGraph() ;
         context = Context.setupContext(context, dsg) ;
         if ( query != null )
@@ -126,6 +129,8 @@ public class QueryExecutionBase implements QueryExecution
     
     @Override
     public void close() {
+    	MyTriple.release(); // 凍結を解除 init()をみよ
+    	
         closed = true;
         if ( queryIterator != null )
             queryIterator.close() ;

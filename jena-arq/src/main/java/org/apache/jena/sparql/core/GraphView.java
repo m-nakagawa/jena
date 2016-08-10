@@ -114,6 +114,7 @@ public class GraphView extends GraphBase implements Sync
     
     @Override
     protected ExtendedIterator<Triple> graphBaseFind(Node s, Node p, Node o) {
+        System.out.println(String.format("GraphView YY:%s:%s:%s", s.toString(), p.toString(), o.toString())); // MNakagawa
         if ( Quad.isUnionGraph(gn) )
             return graphUnionFind(s, p, o) ;
         Node g = graphNode(gn) ;

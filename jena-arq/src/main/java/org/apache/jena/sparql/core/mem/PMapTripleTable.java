@@ -28,6 +28,7 @@ import org.apache.jena.atlas.lib.persistent.PersistentSet;
 import org.apache.jena.atlas.lib.tuple.TConsumer3;
 import org.apache.jena.atlas.lib.tuple.TFunction3;
 import org.apache.jena.atlas.lib.tuple.TupleMap;
+import org.apache.jena.graph.MyTriple;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.mem.FourTupleMap.ThreeTupleMap;
@@ -91,6 +92,13 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
         return map(find).apply(s, p, o);
     }
     
+    // MNakagawa
+    @Override
+    protected Triple unmap(final Node x1, final Node x2, final Node x3) {
+    	System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
+        return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
+        //return apply(reverse, x1, x2, x3, Triple::new);
+    }    
     /**
      * We descend through the nested {@link PMap}s building up {@link Stream}s of partial tuples from which we develop a
      * {@link Stream} of full tuples which is our result. Use {@link Node#ANY} or <code>null</code> for a wildcard.
@@ -98,6 +106,7 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     @SuppressWarnings("unchecked") // Because of (Stream<Triple>) -- but why is that needed?
     private TFunction3<Node, Stream<Triple>> find = (first, second, third) -> {
         debug("Querying on three-tuple pattern: {} {} {} .", first, second, third);
+        System.out.println(String.format("XX %s:%s:%s", first.toString(), second.toString(), third.toString()));// MNakagawa
         final ThreeTupleMap threeTuples = local().get();
         if (isConcrete(first)) {
             debug("Using a specific first slot value.");

@@ -82,6 +82,7 @@ public abstract class OrderedTupleTable<TupleType, ConsumerType> implements Tupl
     }
 
     protected Quad unmap(final Node x1, final Node x2, final Node x3, final Node x4) {
+    	System.out.println(String.format("OrderedTupleTable#85 %s:%s:%s:%s", x1, x2, x3, x4));
         return apply(reverse, x1, x2, x3, x4, Quad::new);
     }
 
@@ -102,6 +103,8 @@ public abstract class OrderedTupleTable<TupleType, ConsumerType> implements Tupl
     }
 
     protected Triple unmap(final Node x1, final Node x2, final Node x3) {
+    	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
+        //return apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
         return apply(reverse, x1, x2, x3, Triple::new);
     }
 
@@ -142,7 +145,9 @@ public abstract class OrderedTupleTable<TupleType, ConsumerType> implements Tupl
         return f.apply(x1a, x2a, x3a, x4a);
     }
 
-    private static <X, Z> Z apply(final TupleMap ordering, final X x1, final X x2, final X x3,
+//    private static <X, Z> Z apply(final TupleMap ordering, final X x1, final X x2, final X x3,
+//            final TFunction3<X, Z> f) {
+    protected static <X, Z> Z apply(final TupleMap ordering, final X x1, final X x2, final X x3,
             final TFunction3<X, Z> f) {
         final X x1a = get(ordering.mapIdx(0), x1, x2, x3);
         final X x2a = get(ordering.mapIdx(1), x1, x2, x3);
