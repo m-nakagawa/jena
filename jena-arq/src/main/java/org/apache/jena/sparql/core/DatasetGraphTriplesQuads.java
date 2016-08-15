@@ -28,6 +28,8 @@ public abstract class DatasetGraphTriplesQuads extends DatasetGraphBaseFind
 {
     @Override
     final public void add(Quad quad) {
+    	// MNakagawa
+    	//
         add(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject()) ;
     }
 

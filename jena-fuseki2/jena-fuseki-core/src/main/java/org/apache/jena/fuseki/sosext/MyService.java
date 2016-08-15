@@ -128,8 +128,17 @@ public class MyService extends WebSocketServlet
         doCommon(req, resp); 
     }
 
-    String queryString ="SELECT * WHERE { ?a ?b ?c . }";
-    /*
+    //String queryString ="SELECT * WHERE { ?a ?b ?c . }";
+    String queryString="#日本語\n"
+    		+ "PREFIX : <http://bizar.aitc.jp/ns/fos/0.1/>\n"
+    		+ "PREFIX ha: <http://bizar.aitc.jp/ns/fos/0.1/人間API/>\n"
+    		+ "#DELETE{ ?c :value        ?data . }\n"	
+    		+ "INSERT{ ?c :value         999 . }\n"
+    		+ "WHERE {\n"
+    		+ "?c  :value		?data .\n"
+			+ "}\n";
+	/*
+	 * 
     String queryString = "#日本語\n"
     		+"PREFIX : <http://bizar.aitc.jp/ns/fos/0.1/>\n"
     		+"PREFIX ha: <http://bizar.aitc.jp/ns/fos/0.1/人間API/>\n"
