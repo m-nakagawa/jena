@@ -22,7 +22,11 @@ package org.apache.jena.graph;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -33,24 +37,31 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
  * 
  */
 public class MyTriple extends Triple {
-	public static class Value {
+	public static final String FOS_PROXY_EMPTY = "http://bizar.aitc.jp/ns/fos/local/proxy/empty";
+	public static final String FOS_PROXY_UNDEFINED = "http://bizar.aitc.jp/ns/fos/local/proxy/undefined";
+	public static final String FOS_PROXY_DATETIME = "http://bizar.aitc.jp/ns/fos/0.1/時刻";
+	public static final String FOS_PROXY_HOLDER = "http://bizar.aitc.jp/ns/fos/local/proxy/holder#";
+	public static final String FOS_PROXY_VALUE = "http://bizar.aitc.jp/ns/fos/local/proxy/value#";
+	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.*)$"); 
+	private static final Pattern fosProxyValue = Pattern.compile(FOS_PROXY_VALUE+"(.*)$"); 
+	
+	static class Value {
 		private final String value;
 		private final String lang;
 		private final RDFDatatype dtype;
-		private final LocalDateTime datetime;
-		public Value(LocalDateTime datetime, String value, RDFDatatype dtype, String lang){
-			this.datetime = datetime;
+		public Value(String value, RDFDatatype dtype, String lang){
 			this.value = value;
 			this.lang = lang;
 			this.dtype = dtype;
+			//this.dtype = null;
 		}
 		
-		public Value(LocalDateTime datetime, String value){
-			this(datetime, value, XSDDatatype.XSDstring, null);
+		public Value(String value){
+			this(value, XSDDatatype.XSDstring, null);
 		}
 
-		public Value(LocalDateTime datetime, String value, RDFDatatype dtype){
-			this(datetime, value, dtype, null);
+		public Value(String value, RDFDatatype dtype){
+			this(value, dtype, null);
 		}
 
 		public String getValue() {
@@ -64,65 +75,155 @@ public class MyTriple extends Triple {
 		public RDFDatatype getDtype() {
 			return dtype;
 		}
-
-		public LocalDateTime getDatetime() {
-			return datetime;
-		}
 	}
 	
-	interface Proxy {
+	interface LeafProxy {
 		String getURI();
+		void setCurrentValue(Value value);
 		Node getCurrentValue();
 	}
 
-	interface ValueSupplier {
-		public Value getValue();
+	private static Map<String,LeafProxy> leafProxyIndex = new HashMap<>();
+	private static Map<String,RootProxy> rootProxyIndex = new HashMap<>();
+
+	static void addLeafProxy(LeafProxy proxy){
+		leafProxyIndex.put(proxy.getURI(), proxy);
 	}
 	
-	private static Map<String,Proxy> proxyIndex = new HashMap<>();
+	static LeafProxy getLeafProxy(String name){
+		return leafProxyIndex.get(name);
+	}
 	
-	public static void addproxy(Proxy proxy){
-		proxyIndex.put(proxy.getURI(), proxy);
+	static void addRootProxy(RootProxy proxy){
+		rootProxyIndex.put(proxy.getURI(), proxy);
+	}
+	
+	static RootProxy getRootProxy(String name){
+		return rootProxyIndex.get(name);
 	}
 
-	public static class Scalarproxy implements Proxy {
-		private String uri;
-		private ValueSupplier proxy;
-
-		public Scalarproxy(String uri, ValueSupplier proxy){
+	static class ValueContainer implements LeafProxy {
+		private final String uri;
+		private Value value;
+		private ValueContainer(String uri){
 			this.uri = uri;
-			this.proxy = proxy;
+			this.value = null;
+			addLeafProxy(this);
 		}
-
-		@Override
-		public String getURI() {
+		
+		public String getURI(){
 			return this.uri;
 		}
 		
-		public ValueSupplier getProxy(){
-			return this.proxy;
+		public void setCurrentValue(Value value){
+			this.value = value;
+		}
+		
+		public Node getCurrentValue(){
+			if(value != null){
+				return NodeFactory.createLiteral(value.getValue(), value.getLang(), value.getDtype());
+			}
+			else {
+				return NodeFactory.createURI(FOS_PROXY_EMPTY);
+			}
+		}
+	}
+	
+	public static class RootProxy {
+		private final String uri;
+		private final Map<String,LeafProxy> proxies;
+		private boolean datetimeIncluded = false; // true:setValueで日付時刻が設定された。 この値はsetDateTimeでfaluseに戻る。
+		private LeafProxy datetime;
+
+		public RootProxy(String uri){
+			this.uri = uri;
+			this.proxies =  new HashMap<>();
+			this.datetime = null;
 		}
 
-		@Override
-		public Node getCurrentValue() {
-			Value value = proxy.getValue();
-			return NodeFactory.createLiteral(value.getValue(), value.getLang(), value.getDtype());
+		public String getURI() {
+			return this.uri;
+		}
+
+		public void addLeaf(String predicate, LeafProxy leaf){
+			this.proxies.put(predicate, leaf);
+		}
+		
+		public void setDateTime(LocalDateTime datetime){
+			if(datetimeIncluded){
+				datetimeIncluded = false;
+			}
+			else {
+				if(this.datetime == null){
+					this.datetime = this.proxies.get(FOS_PROXY_DATETIME);
+					if(this.datetime == null){
+						// 時刻プロパティは未定義
+						return;
+					}
+				}
+				this.datetime.setCurrentValue(new Value(datetime.toString(), XSDDatatype.XSDdateTime));
+			}
+		}
+		
+		public void setValue(String predicate, Node node){
+			if(predicate.equals(FOS_PROXY_DATETIME)){
+				this.datetimeIncluded = true;
+			}
+			LeafProxy leaf = this.proxies.get(predicate);
+			if(leaf != null){
+				Value value = new Value(node.toString(), node.getLiteralDatatype(), node.getLiteralLanguage());
+				leaf.setCurrentValue(value);
+				System.err.println(String.format("VALUE:%s:%s:%s:%s:%s", uri, predicate, value.dtype, value.value, value.lang));
+			}
+			else {
+				System.err.println(String.format("UNDEFINED LEAF:%s:%s:%s", uri, predicate, node.toString()));
+			}
+		}
+		
+		public Node getCurrentValue(String predicate) {
+			LeafProxy proxy = this.proxies.get(predicate);
+			if(proxy != null){
+				return proxy.getCurrentValue();
+			}
+			else {
+				return NodeFactory.createURI(FOS_PROXY_UNDEFINED);
+			}
 		}
 		
 	}
 
-	static class TestProxy implements ValueSupplier {
-		int cnt = 0;
-		@Override
-		public Value getValue() {
-			++cnt;
-			Value ret = new Value(LocalDateTime.now(), Integer.toString(cnt), XSDDatatype.XSDint);
-			return ret;
+	public static class TestProxy implements LeafProxy {
+		private final String uri;
+		private int value;
+		
+		private TestProxy(String uri){
+			this.uri = uri;
+			this.value = 0;
+			addLeafProxy(this);
+		}
+		
+		public String getURI(){
+			return this.uri;
+		}
+		
+		public void setCurrentValue(Value value){
+			if(value.dtype == XSDDatatype.XSDint || value.dtype == XSDDatatype.XSDinteger){
+				this.value = Integer.valueOf(value.value);
+			}
+			else {
+				// 無視
+			}
+		}
+		
+		public Node getCurrentValue(){
+			++value;
+			return NodeFactory.createLiteral(Integer.toString(value), XSDDatatype.XSDinteger);
 		}
 	}
 
+
 	static {
-		addproxy(new Scalarproxy("http://bizar.aitc.jp/ns/fos/0.1/internal/01", new TestProxy()));		
+		new TestProxy("http://bizar.aitc.jp/ns/fos/0.1/internal/01");
 	}
 	
 
@@ -136,9 +237,63 @@ public class MyTriple extends Triple {
 		System.out.println("RELEASE--------");
 	}
 	
+	private static Set<RootProxy> updatedProxies;
+	private static LocalDateTime updateTime;
+
+	public static void prepareUpdate(){
+		updateTime = LocalDateTime.now();
+		updatedProxies = new HashSet<>();
+		System.out.println("PREPARE UPDATE--------");
+	}
+	
+	public static void finishUpdate(){
+		System.out.println("FINISH UPDATE--------");
+		for(RootProxy proxy : updatedProxies){
+			proxy.setDateTime(updateTime);
+		}
+	}
+	
+	// return true: Proxyがデータを消費した
+	public static boolean isProxy(Node g, Node s, Node p, Node o){
+		System.err.println(String.format("%s:%s:%s:%s", g.toString(), s.toString(), p.toString(), o.toString()));
+		if(s instanceof Node_URI ){
+			Matcher mHolder = fosProxyHolder.matcher(s.toString());
+			if(mHolder.matches()){
+				if(o instanceof Node_URI){
+					Matcher mValue = fosProxyValue.matcher(o.toString());
+					if(mValue.matches()){
+						// 登録 
+						RootProxy root = getRootProxy(s.toString());
+						if(root == null){
+							root = new RootProxy(s.toString());
+							addRootProxy(root);
+						}
+						LeafProxy leaf = getLeafProxy(o.toString());
+						if(leaf == null){
+							leaf = new ValueContainer(o.toString());
+						}
+						root.addLeaf(p.toString(), leaf);
+						System.err.println(String.format("REGISTERED:%s:%s:%s", s.toString(), p.toString(), o.toString()));
+						return false;
+					}
+				}
+				else {
+					// 値の設定
+					RootProxy root = getRootProxy(s.toString());
+					if(root != null){
+						updatedProxies.add(root);
+						root.setValue(p.toString(), o);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
 	private static Node proxy2value(Node node){
 		if(node instanceof Node_URI){
-			Proxy proxy = proxyIndex.get(node.getURI());
+			LeafProxy proxy = leafProxyIndex.get(node.getURI());
 			if(proxy != null){
 				return proxy.getCurrentValue();
 			}
@@ -150,6 +305,6 @@ public class MyTriple extends Triple {
 		super(
 				proxy2value(s),
 				proxy2value(p),
-				proxy2value(o));
+				proxy2value(o)); //!MNakagawa oだけか？
 	}
 }

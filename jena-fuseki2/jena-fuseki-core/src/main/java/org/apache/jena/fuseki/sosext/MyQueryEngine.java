@@ -72,7 +72,7 @@ public class MyQueryEngine extends QueryEngineMain
         // Extension point: possible place to alter the algebra expression.
         // Alternative to eval(). 
         op = super.modifyOp(op) ;
-        System.err.println("MY QUERY ENGINE EXTENSION POINT");
+        //System.err.println("MY QUERY ENGINE EXTENSION POINT"); // MNakagawa
         // op = Algebra.toQuadForm(op) ;
         return op ;
     }

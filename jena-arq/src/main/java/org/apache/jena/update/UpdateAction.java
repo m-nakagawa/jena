@@ -22,6 +22,7 @@ import java.io.InputStream ;
 
 import org.apache.jena.atlas.io.IO ;
 import org.apache.jena.graph.Graph ;
+import org.apache.jena.graph.MyTriple;
 import org.apache.jena.query.Dataset ;
 import org.apache.jena.query.QuerySolution ;
 import org.apache.jena.query.Syntax ;
@@ -412,6 +413,7 @@ public class UpdateAction
             throw new ARQException("No suitable update procesors are registered/able to execute your updates");
         
         uProc.startRequest();
+        MyTriple.prepareUpdate(); // MNakagawa
         try
         {
             UpdateSink sink = new UsingUpdateSink(uProc.getUpdateSink(), usingList) ;
@@ -423,6 +425,7 @@ public class UpdateAction
             finally
             {
                 sink.close() ;
+            	MyTriple.finishUpdate(); // MNakagawa
             }
         }
         finally

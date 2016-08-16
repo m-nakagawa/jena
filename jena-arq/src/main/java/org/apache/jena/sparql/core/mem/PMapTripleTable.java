@@ -95,8 +95,9 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     // MNakagawa
     @Override
     protected Triple unmap(final Node x1, final Node x2, final Node x3) {
-    	System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
-        return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
+    	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
+        //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
+        return apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
         //return apply(reverse, x1, x2, x3, Triple::new);
     }    
     /**
@@ -106,7 +107,7 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     @SuppressWarnings("unchecked") // Because of (Stream<Triple>) -- but why is that needed?
     private TFunction3<Node, Stream<Triple>> find = (first, second, third) -> {
         debug("Querying on three-tuple pattern: {} {} {} .", first, second, third);
-        System.out.println(String.format("XX %s:%s:%s", first.toString(), second.toString(), third.toString()));// MNakagawa
+        //System.out.println(String.format("XX %s:%s:%s", first.toString(), second.toString(), third.toString()));// MNakagawa
         final ThreeTupleMap threeTuples = local().get();
         if (isConcrete(first)) {
             debug("Using a specific first slot value.");

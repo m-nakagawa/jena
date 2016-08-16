@@ -128,7 +128,8 @@ public class MyService extends WebSocketServlet
         doCommon(req, resp); 
     }
 
-    //String queryString ="SELECT * WHERE { ?a ?b ?c . }";
+    String queryString ="SELECT * WHERE { ?a ?b ?c . }";
+    /*
     String queryString="#日本語\n"
     		+ "PREFIX : <http://bizar.aitc.jp/ns/fos/0.1/>\n"
     		+ "PREFIX ha: <http://bizar.aitc.jp/ns/fos/0.1/人間API/>\n"
@@ -137,6 +138,7 @@ public class MyService extends WebSocketServlet
     		+ "WHERE {\n"
     		+ "?c  :value		?data .\n"
 			+ "}\n";
+	*/
 	/*
 	 * 
     String queryString = "#日本語\n"
@@ -186,7 +188,7 @@ public class MyService extends WebSocketServlet
         try {
             //action.beginRead() ;
             //Dataset dataset = decideDataset(action, query, queryStringLog) ;
-        	Dataset dataset = DatasetFactory.create(dSrv.getDataset());
+        	Dataset dataset = DatasetFactory.wrap(dSrv.getDataset());
             try ( QueryExecution qExec = QueryExecutionFactory.create(query, dataset) ; ) {
             	ResultSet rs = qExec.execSelect() ;            	
                 //SPARQLResult result = executeQuery(action, qExec, query, queryStringLog) ;

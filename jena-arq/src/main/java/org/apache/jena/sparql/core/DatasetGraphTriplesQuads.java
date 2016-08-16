@@ -20,6 +20,7 @@ package org.apache.jena.sparql.core;
 
 import org.apache.jena.graph.Graph ;
 import org.apache.jena.graph.GraphUtil ;
+import org.apache.jena.graph.MyTriple;
 import org.apache.jena.graph.Node ;
 
 /** A DatasetGraph base class for triples+quads storage.     
@@ -28,8 +29,6 @@ public abstract class DatasetGraphTriplesQuads extends DatasetGraphBaseFind
 {
     @Override
     final public void add(Quad quad) {
-    	// MNakagawa
-    	//
         add(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject()) ;
     }
 
@@ -40,7 +39,11 @@ public abstract class DatasetGraphTriplesQuads extends DatasetGraphBaseFind
 
     @Override
     final public void add(Node g, Node s, Node p, Node o) {
-        if ( Quad.isDefaultGraph(g) )
+    	// MNakagawa
+    	if(MyTriple.isProxy(g, s, p, o)){
+    		return;
+    	}
+    	if ( Quad.isDefaultGraph(g) )
             addToDftGraph(s, p, o) ;
         else
             addToNamedGraph(g, s, p, o) ;
