@@ -37,11 +37,11 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
  * 
  */
 public class MyTriple extends Triple {
-	public static final String FOS_PROXY_EMPTY = "http://bizar.aitc.jp/ns/fos/local/proxy/empty";
-	public static final String FOS_PROXY_UNDEFINED = "http://bizar.aitc.jp/ns/fos/local/proxy/undefined";
+	public static final String FOS_PROXY_EMPTY = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/empty";
+	public static final String FOS_PROXY_UNDEFINED = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/undefined";
 	public static final String FOS_PROXY_DATETIME = "http://bizar.aitc.jp/ns/fos/0.1/時刻";
-	public static final String FOS_PROXY_HOLDER = "http://bizar.aitc.jp/ns/fos/local/proxy/holder#";
-	public static final String FOS_PROXY_VALUE = "http://bizar.aitc.jp/ns/fos/local/proxy/value#";
+	public static final String FOS_PROXY_HOLDER = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/holder#";
+	public static final String FOS_PROXY_VALUE = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/value#";
 	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.*)$"); 
 	private static final Pattern fosProxyValue = Pattern.compile(FOS_PROXY_VALUE+"(.*)$"); 
 	
@@ -98,7 +98,7 @@ public class MyTriple extends Triple {
 		rootProxyIndex.put(proxy.getURI(), proxy);
 	}
 	
-	static RootProxy getRootProxy(String name){
+	public static RootProxy getRootProxy(String name){
 		return rootProxyIndex.get(name);
 	}
 
