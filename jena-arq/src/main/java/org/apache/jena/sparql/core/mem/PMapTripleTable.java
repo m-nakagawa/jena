@@ -28,7 +28,7 @@ import org.apache.jena.atlas.lib.persistent.PersistentSet;
 import org.apache.jena.atlas.lib.tuple.TConsumer3;
 import org.apache.jena.atlas.lib.tuple.TFunction3;
 import org.apache.jena.atlas.lib.tuple.TupleMap;
-import org.apache.jena.graph.MyTriple;
+import org.apache.jena.fosext.MyTriple;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.mem.FourTupleMap.ThreeTupleMap;

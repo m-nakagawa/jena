@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.sosext;
+package org.apache.jena.fuseki.fosext;
 
 import org.apache.jena.query.Query ;
 import org.apache.jena.sparql.ARQInternalErrorException ;

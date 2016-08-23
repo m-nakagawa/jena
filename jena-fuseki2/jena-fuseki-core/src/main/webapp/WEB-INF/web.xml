@@ -169,7 +169,7 @@
   
   <servlet><!-- MNakagawa -->
     <servlet-name>MyServlet</servlet-name>
-    <servlet-class>org.apache.jena.fuseki.sosext.MyService</servlet-class>
+    <servlet-class>org.apache.jena.fuseki.fosext.MyService</servlet-class>
   </servlet>
 
   <servlet>
@@ -199,7 +199,7 @@
 
   <servlet-mapping><!-- MNakagawa -->
     <servlet-name>MyServlet</servlet-name>
-    <url-pattern>/my/*</url-pattern>
+    <url-pattern>/fos/*</url-pattern>
   </servlet-mapping>
   
   <servlet>

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,14 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
+package org.apache.jena.fosext;
 
-package org.apache.jena.fuseki.sosext;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Node_URI;
+import org.apache.jena.graph.Triple;
 
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-// MNakagawa
-@WebSocket
-public class MyNullWebSocket {
-
+/**
+ * MNakagawa
+ * @author m-nakagawa
+ * 
+ */
+public class MyTriple extends Triple {
+	private static Node proxy2value(Node node){
+		if(node instanceof Node_URI){
+			RealtimeValueBroker.LeafProxy proxy = RealtimeValueBroker.getLeafProxy(node.getURI());
+			if(proxy != null){
+				return proxy.getCurrentValue();
+			}
+		}
+		return node;
+	}
+	
+	public MyTriple( Node s, Node p, Node o ){
+		super(
+				proxy2value(s),
+				proxy2value(p),
+				proxy2value(o)); //!MNakagawa oだけか？
+	}
 }
-

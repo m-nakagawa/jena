@@ -18,9 +18,9 @@
 
 package org.apache.jena.sparql.core;
 
+import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.graph.Graph ;
 import org.apache.jena.graph.GraphUtil ;
-import org.apache.jena.graph.MyTriple;
 import org.apache.jena.graph.Node ;
 
 /** A DatasetGraph base class for triples+quads storage.     
@@ -40,7 +40,7 @@ public abstract class DatasetGraphTriplesQuads extends DatasetGraphBaseFind
     @Override
     final public void add(Node g, Node s, Node p, Node o) {
     	// MNakagawa
-    	if(MyTriple.isProxy(g, s, p, o)){
+    	if(RealtimeValueBroker.isProxy(g, s, p, o)){
     		return;
     	}
     	if ( Quad.isDefaultGraph(g) )

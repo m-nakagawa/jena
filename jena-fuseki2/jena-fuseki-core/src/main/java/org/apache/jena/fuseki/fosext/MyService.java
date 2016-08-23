@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.sosext;
+package org.apache.jena.fuseki.fosext;
 
 import static org.apache.jena.riot.WebContent.charsetUTF8 ;
 import static org.apache.jena.riot.WebContent.contentTypeTextPlain ;
@@ -99,8 +99,10 @@ public class MyService extends WebSocketServlet
 */
 	@Override
 	public void configure(WebSocketServletFactory factory) {
-		// Listener
-		factory.register(MyWebSocket.class);
+		//factory.getPolicy().setIdleTimeout(10000); // 10sec
+		//factory.register(MyWebSocket.class);
+        // set a custom WebSocket creator
+        factory.setCreator(new MyWebSocket.MyWebSocketCreator());
 	}
 
 	// Ping is special.

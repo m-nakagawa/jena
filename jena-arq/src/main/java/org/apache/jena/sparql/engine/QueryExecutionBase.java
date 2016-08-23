@@ -27,11 +27,23 @@ import java.util.concurrent.TimeUnit;
 import org.apache.jena.atlas.lib.Alarm ;
 import org.apache.jena.atlas.lib.AlarmClock;
 import org.apache.jena.atlas.logging.Log;
-import org.apache.jena.graph.MyTriple;
+import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.query.* ;
-import org.apache.jena.rdf.model.* ;
+import org.apache.jena.query.ARQ;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.DatasetFactory;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryCancelledException;
+import org.apache.jena.query.QueryExecException;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.riot.system.IRIResolver;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.ARQConstants;
@@ -88,7 +100,7 @@ public class QueryExecutionBase implements QueryExecution
     }
     
     private void init() {
-    	MyTriple.freeze(); // MNakagawa  外部情報を凍結  close()をみよ
+    	RealtimeValueBroker.freeze(); // MNakagawa  外部情報を凍結  close()をみよ
     	
         DatasetGraph dsg = (dataset == null) ? null : dataset.asDatasetGraph() ;
         context = Context.setupContext(context, dsg) ;
@@ -129,7 +141,7 @@ public class QueryExecutionBase implements QueryExecution
     
     @Override
     public void close() {
-    	MyTriple.release(); // 凍結を解除 init()をみよ
+    	RealtimeValueBroker.release(); // 凍結を解除 init()をみよ
     	
         closed = true;
         if ( queryIterator != null )

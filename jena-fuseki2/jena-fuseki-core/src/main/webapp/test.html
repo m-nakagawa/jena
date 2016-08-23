@@ -8,10 +8,11 @@
     <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
     <!--<script src="js/jquery-1.11.3.min.js"></script>-->
     <script type="text/javascript">
-var ws = new WebSocket('ws://localhost:3030/my');
+//var ws = new WebSocket('ws://localhost:3030/fos/test01/update/path/1F/居間/温度');
+var ws = new WebSocket('ws://localhost:3030/fos/test01/update/id/1');
 ws.onopen = function () {
     console.log("Connecting is success!!");
-    ws.send("Hello world!");
+    //ws.send("Hello world!");
 };
 
 ws.onmessage = function (me) {

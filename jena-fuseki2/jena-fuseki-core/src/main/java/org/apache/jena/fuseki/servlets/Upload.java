@@ -33,8 +33,8 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload ;
 import org.apache.commons.fileupload.util.Streams ;
 import org.apache.jena.atlas.io.IO ;
 import org.apache.jena.atlas.web.ContentType ;
+import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.fuseki.FusekiLib ;
-import org.apache.jena.graph.MyTriple;
 import org.apache.jena.riot.Lang ;
 import org.apache.jena.riot.RDFLanguages ;
 import org.apache.jena.riot.RiotParseException ;
@@ -142,7 +142,7 @@ public class Upload {
                 // count just this step
                 StreamRDFCounting countingDest2 =  StreamRDFLib.count(countingDest) ;
                 try {
-                	MyTriple.prepareUpdate(); // MNakagawa
+                	RealtimeValueBroker.prepareUpdate(); // MNakagawa
                     ActionSPARQL.parse(action, countingDest2, stream, lang, base);
                     UploadDetails details1 = new UploadDetails(countingDest2.count(), countingDest2.countTriples(),countingDest2.countQuads()) ;
                     action.log.info(format("[%d] Filename: %s, Content-Type=%s, Charset=%s => %s : %s", 
@@ -154,7 +154,7 @@ public class Upload {
                                            ex.getMessage())) ;
                     throw ex ;
                 } finally {
-                	MyTriple.finishUpdate(); // MNakagawa
+                	RealtimeValueBroker.finishUpdate(); // MNakagawa
                 }
             }
         }
