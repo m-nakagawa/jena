@@ -227,6 +227,7 @@ public class MyService extends WebSocketServlet
             return Lib.classShortName(ex.getCause().getClass()) ;
         return null ;
     }
+
     private String formatForLog(Query query) {
         IndentedLineBuffer out = new IndentedLineBuffer() ;
         out.setFlatMode(true) ;

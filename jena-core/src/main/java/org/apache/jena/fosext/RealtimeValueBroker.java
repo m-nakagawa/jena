@@ -18,8 +18,11 @@
 
 package org.apache.jena.fosext;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,18 +36,27 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Node_URI;
+import org.slf4j.Logger;
 
 public class RealtimeValueBroker {
-	public static final String FOS_PROXY_EMPTY = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/empty";
-	public static final String FOS_PROXY_UNDEFINED = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/undefined";
-	public static final String FOS_PROXY_DATETIME = "http://bizar.aitc.jp/ns/fos/0.1/時刻";
-	public static final String FOS_PROXY_HOLDER = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/holder#";
-	public static final String FOS_PROXY_VALUE = "http://bizar.aitc.jp/ns/fos/0.1/local/proxy/value#";
+    private final static Logger log = getLogger(RealtimeValueBroker.class);
+
+    public static final String FOS_NAME_BASE = "http://bizar.aitc.jp/ns/fos/0.1/";
+	public static final String FOS_LOCAL_NAME_BASE = FOS_NAME_BASE+"local/";
+	public static final String FOS_TAG_BASE = FOS_LOCAL_NAME_BASE+"label#";
+	public static final String FOS_PROXY_BASE = FOS_LOCAL_NAME_BASE+"proxy/";
+	public static final String FOS_PROXY_EMPTY = FOS_PROXY_BASE+"empty";
+	public static final String FOS_PROXY_UNDEFINED = FOS_PROXY_BASE+"undefined";
+	public static final String FOS_PROXY_HOLDER = FOS_PROXY_BASE+"holder#";
+	public static final String FOS_PROXY_VALUE = FOS_PROXY_BASE+"value#";
+	public static final String FOS_PROXY_DATETIME_SHORT = "時刻";
+	public static final String FOS_PROXY_ID = "id";
+	public static final String FOS_PROXY_DATETIME = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT;
 	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.*)$"); 
 	private static final Pattern fosProxyValue = Pattern.compile(FOS_PROXY_VALUE+"(.*)$"); 
 	
 	private static Map<String,LeafProxy> leafProxyIndex = new HashMap<>();
-	private static Map<String,RootProxy> rootProxyIndex = new HashMap<>();
+	private static Map<String,HubProxy> rootProxyIndex = new HashMap<>();
 	static {
 		new TestProxy("http://bizar.aitc.jp/ns/fos/0.1/internal/01");
 		// どれもデータ型を推測しない
@@ -96,7 +108,7 @@ public class RealtimeValueBroker {
 		System.out.println("RELEASE--------");
 	}
 	
-	private static Set<RootProxy> updatedProxies;
+	private static Set<HubProxy> updatedProxies;
 	private static LocalDateTime updateTime;
 
 	public static void prepareUpdate(){
@@ -107,7 +119,7 @@ public class RealtimeValueBroker {
 	
 	public static void finishUpdate(){
 		System.out.println("FINISH UPDATE--------");
-		for(RootProxy proxy : updatedProxies){
+		for(HubProxy proxy : updatedProxies){
 			proxy.update(updateTime);
 		}
 	}
@@ -122,9 +134,9 @@ public class RealtimeValueBroker {
 					Matcher mValue = fosProxyValue.matcher(o.toString());
 					if(mValue.matches()){
 						// 登録 
-						RootProxy root = getRootProxy(s.toString());
+						HubProxy root = getRootProxy(s.toString());
 						if(root == null){
-							root = new RootProxy(s.toString());
+							root = new HubProxy(s.toString());
 							addRootProxy(root);
 						}
 						LeafProxy leaf = getLeafProxy(o.toString());
@@ -138,7 +150,7 @@ public class RealtimeValueBroker {
 				}
 				else {
 					// 値の設定
-					RootProxy root = getRootProxy(s.toString());
+					HubProxy root = getRootProxy(s.toString());
 					if(root != null){
 						updatedProxies.add(root);
 						root.setValue(p.toString(), o);
@@ -183,6 +195,8 @@ public class RealtimeValueBroker {
 			return dtype;
 		}
 	}
+
+	public static final Pattern URI_SPLITTER = Pattern.compile("^(.*[#|/])(.+)$");
 	
 	public interface LeafProxy {
 		String getURI();
@@ -198,11 +212,11 @@ public class RealtimeValueBroker {
 		return leafProxyIndex.get(name);
 	}
 	
-	static void addRootProxy(RootProxy proxy){
+	static void addRootProxy(HubProxy proxy){
 		rootProxyIndex.put(proxy.getURI(), proxy);
 	}
 	
-	public static RootProxy getRootProxy(String name){
+	public static HubProxy getRootProxy(String name){
 		return rootProxyIndex.get(name);
 	}
 
@@ -234,21 +248,52 @@ public class RealtimeValueBroker {
 	}
 	
 	public interface ValueConsumer {
-		boolean informValueUpdate(RootProxy proxy); // return false: 登録を解除する
+		boolean informValueUpdate(HubProxy proxy); // return false: 登録を解除する
 	}
 	
-	public static class RootProxy {
+	public final static class KVPair {
+	    private final String key;
+	    private final Node value;
+
+	    public KVPair(String key, Node value) {
+	        this.key = key;
+	        this.value = value;
+	    }
+
+	    public String getKey() {
+	        return key;
+	    }
+
+	    public Node getValue() {
+	        return value;
+	    }
+	}
+	
+
+	public static class HubProxy {
 		private final String uri;
+		private final Node id;
 		private final Map<String,LeafProxy> proxies;
 		private final Set<ValueConsumer> consumers;
 		private boolean datetimeIncluded = false; // true:setValueで日付時刻が設定された。 この値はsetDateTimeでfaluseに戻る。
 		private LeafProxy datetime;
+		private List<String> propertyNames;
 
-		public RootProxy(String uri){
+		public HubProxy(String uri){
 			this.uri = uri;
 			this.proxies =  new HashMap<>();
 			this.datetime = null;
 			this.consumers = new HashSet<>();
+			this.propertyNames = new ArrayList<>();
+			Matcher m = URI_SPLITTER.matcher(uri);
+			String idStr;
+			if(m.matches()){
+				idStr = m.group(2);
+			}
+			else {
+				idStr = uri;
+			}
+			this.id = NodeFactory.createLiteral(idStr, "", XSDDatatype.XSDstring);
 		}
 
 		public void addConsumer(ValueConsumer consumer){
@@ -264,7 +309,22 @@ public class RealtimeValueBroker {
 		}
 
 		public void addLeaf(String predicate, LeafProxy leaf){
-			this.proxies.put(predicate, leaf);
+			String leafUri = leaf.getURI();
+			Matcher m = RealtimeValueBroker.URI_SPLITTER.matcher(predicate);
+			String errmsg = "";
+			if(m.matches()){
+				String shortPredicate = m.group(2);
+				if(!this.proxies.containsKey(uri) && !this.proxies.containsKey(shortPredicate)){
+					this.proxies.put(predicate, leaf);
+					this.proxies.put(shortPredicate, leaf);
+					if(!shortPredicate.equals(FOS_PROXY_DATETIME_SHORT)){
+						this.propertyNames.add(shortPredicate);
+						Collections.sort(this.propertyNames);
+					}
+				}
+				errmsg = String.format("(%s)", shortPredicate);
+			}
+			log.error(String.format("Can't append %s to %s %s %s", leafUri, predicate, this.uri, errmsg));
 		}
 		
 		public void update(LocalDateTime datetime){
@@ -333,6 +393,38 @@ public class RealtimeValueBroker {
 		
 		public Map<String,LeafProxy> getLeaves(){
 			return this.proxies;
+		}
+		
+		private String[] makePair(String s1, String s2){
+			String[] ret = new String[2];
+			ret[0] = s1;
+			ret[1] = s2;
+			return ret;
+		}
+		
+		private String[] makeValuePair(String label, Node value){
+			String[] ret = new String[2];
+			ret[0] = label;
+			if(value.isLiteral()){
+				ret[1] = value.getLiteralLexicalForm();
+			}
+			else {
+				ret[1] = value.toString();
+				if(ret[1].equals(RealtimeValueBroker.FOS_PROXY_EMPTY)){
+					ret[1] = "null";
+				}
+			}
+			return ret;
+		}
+		
+		public List<KVPair> getPropertyValuePairs(){
+			List<KVPair>  ret = new ArrayList<>();
+			ret.add(new KVPair(FOS_PROXY_ID, this.id));
+			ret.add(new KVPair(FOS_PROXY_DATETIME_SHORT,this.proxies.get(FOS_PROXY_DATETIME_SHORT).getCurrentValue()));
+			for(String shortName : this.propertyNames){
+				ret.add(new KVPair(shortName,this.proxies.get(shortName).getCurrentValue()));
+			}
+			return ret;
 		}
 	}
 }

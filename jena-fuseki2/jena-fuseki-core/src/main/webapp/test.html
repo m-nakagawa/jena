@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- 日本語 -->
 <html>
   <!-- MNakagawa -->
   <head>
@@ -8,8 +9,10 @@
     <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
     <!--<script src="js/jquery-1.11.3.min.js"></script>-->
     <script type="text/javascript">
-//var ws = new WebSocket('ws://localhost:3030/fos/test01/update/path/1F/居間/温度');
-var ws = new WebSocket('ws://localhost:3030/fos/test01/update/id/1');
+//var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/1F/居間/温度');
+//var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/居間/温度');
+var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/温度');
+//var ws = new WebSocket('ws://localhost:3030/fos/update/id/1');
 ws.onopen = function () {
     console.log("Connecting is success!!");
     //ws.send("Hello world!");
@@ -19,6 +22,8 @@ ws.onmessage = function (me) {
     var receivedData = me.data;
     console.log("Message is exists!!");
     console.log("recievedData: " + receivedData);
+    var j = $.parseJSON(receivedData);
+    console.log("id:"+j.id);
     $("div#w1").text(receivedData);
 };
     </script>
