@@ -100,7 +100,7 @@ public class QueryExecutionBase implements QueryExecution
     }
     
     private void init() {
-    	RealtimeValueBroker.freeze(); // MNakagawa  外部情報を凍結  close()をみよ
+    	RealtimeValueBroker.freeze(this); // MNakagawa  外部情報を凍結  close()をみよ
     	
         DatasetGraph dsg = (dataset == null) ? null : dataset.asDatasetGraph() ;
         context = Context.setupContext(context, dsg) ;
@@ -141,7 +141,7 @@ public class QueryExecutionBase implements QueryExecution
     
     @Override
     public void close() {
-    	RealtimeValueBroker.release(); // 凍結を解除 init()をみよ
+    	RealtimeValueBroker.release(this); // 凍結を解除 init()をみよ
     	
         closed = true;
         if ( queryIterator != null )

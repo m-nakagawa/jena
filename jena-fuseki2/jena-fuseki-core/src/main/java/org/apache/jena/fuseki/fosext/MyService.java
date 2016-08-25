@@ -20,9 +20,20 @@ package org.apache.jena.fuseki.fosext;
 
 import static org.apache.jena.riot.WebContent.charsetUTF8 ;
 import static org.apache.jena.riot.WebContent.contentTypeTextPlain ;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException ;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.DataFormatException;
 
 import javax.servlet.ServletOutputStream ;
 import javax.servlet.http.HttpServletRequest ;
@@ -31,12 +42,15 @@ import javax.servlet.http.HttpServletResponse ;
 import org.apache.jena.atlas.io.IndentedLineBuffer;
 import org.apache.jena.atlas.lib.DateTimeUtils ;
 import org.apache.jena.atlas.lib.Lib;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.servlets.ServletOps ;
+import org.apache.jena.graph.Node;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.Query;
@@ -53,6 +67,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.web.HttpSC ;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.slf4j.Logger;
 
 // MNakagawa
 /** The ping servlet provides a low costy, uncached endpoint that can be used
@@ -62,6 +77,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 @SuppressWarnings("serial")
 public class MyService extends WebSocketServlet
 {
+    private final static Logger log = getLogger(MyService.class);
 	/*
 	@WebSocket
 	public static class WebSocketSample {
@@ -99,7 +115,7 @@ public class MyService extends WebSocketServlet
 */
 	@Override
 	public void configure(WebSocketServletFactory factory) {
-		//factory.getPolicy().setIdleTimeout(10000); // 10sec
+		factory.getPolicy().setIdleTimeout(10000); // 10sec
 		//factory.register(MyWebSocket.class);
         // set a custom WebSocket creator
         factory.setCreator(new MyWebSocket.MyWebSocketCreator());
@@ -114,14 +130,114 @@ public class MyService extends WebSocketServlet
         Fuseki.serverLog.info("myservice :: MyQueryEngine added.");
     } 
     
+    private void sendError(HttpServletResponse resp, int errcode, String text){
+    	try{
+    		resp.setStatus(errcode);
+    		resp.setContentType(contentTypeTextPlain);
+    		resp.setCharacterEncoding(charsetUTF8) ;
+    		resp.setStatus(HttpSC.OK_200);
+    		ServletOutputStream out = resp.getOutputStream() ;
+    		out.println(text);
+    	} catch (IOException ex) {
+    		Fuseki.serverLog.warn("myservice :: IOException :: "+ex.getMessage());
+    	}
+    }
+
+    private void readOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets){
+    	try{
+    		PrintWriter writer = resp.getWriter();
+    		writer.println("[");
+    		for(RealtimeValueBroker.HubProxy p: targets){
+    			writer.println(RealtimeValueUtil.getRealtimeValue(p));
+    		}
+    		writer.println("]");
+    	} catch (IOException ex) {
+    		Fuseki.serverLog.warn("myservice :: IOException :: "+ex.getMessage());
+    	}
+    }
+    
+
+    
+    private void writeOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets, Map<String,String[]> parms){
+    	if(parms.size() == 1){
+    		String[][] svalues = parms.values().toArray(new String[1][]);
+    		if(svalues[0][0].length() == 0){
+    			// 「パス?123」のように値が1個だけ指定されている
+    			String[] keys = parms.keySet().toArray(new String[1]);
+    			
+    			// このときには「パス?値=123」と同等の動作を行う。
+    			parms = new HashMap<>();
+    			String[] v = new String[1];
+    			v[0] = keys[0];
+    			parms.put(RealtimeValueBroker.FOS_DEFAULT_VALUE_TAG, v);
+    		}
+    	}
+
+    	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value>> values = new ArrayList<>(); 
+    	for(Entry<String,String[]> e: parms.entrySet()){
+    		if(e.getValue().length != 1){
+        		Fuseki.serverLog.warn("Duplicate param:"+e.getKey());
+    		}
+    		String valueStr = e.getValue()[0];
+    		String key = RealtimeValueBroker.FOS_NAME_BASE+e.getKey();
+    		System.err.println(key+"  "+valueStr);
+    		RealtimeValueBroker.Value value = RealtimeValueUtil.str2value(valueStr);
+			values.add(new RealtimeValueBroker.Pair<>(key, value));
+    	}
+    	
+    	RealtimeValueBroker.UpdateContext context = null;
+    	try {
+    		context = RealtimeValueBroker.prepareUpdate();
+    		for(RealtimeValueBroker.HubProxy p: targets){
+    			System.err.println("---"+p.getURI());
+    			for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
+    				p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    			}
+    		}
+    	}
+    	finally {
+    		if(context != null){
+    	    	RealtimeValueBroker.finishUpdate(context);
+    		}
+    	}
+    }
+    
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
-        doCommon(req, resp); 
+    	final Map<String,String[]> parms = req.getParameterMap();
+
+    	resp.setCharacterEncoding("UTF-8");
+    	//String path = req.getServletPath();
+    	String path = "/dummy"+req.getPathInfo();
+    	
+    	RealtimeValueUtil.TargetOperation targetOperation;
+    	try {
+    		 targetOperation = RealtimeValueUtil.findTargets(path,
+    				 (index)->{
+    					 String[] result =parms.get(index);
+    					 return result==null?null:Arrays.asList(result);
+    				 });
+    	}catch(DataFormatException e){
+    		sendError(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, e.toString());
+    		return;
+    	}
+    	
+    	if(targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
+    		readOp(resp,targetOperation.getTargets());
+    	}
+    	else {
+    		writeOp(resp,targetOperation.getTargets(), parms);
+    	}
+    }
+    
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) {
+
     }
     
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-        doCommon(req, resp); 
+        doPut(req, resp); 
     }
     
 

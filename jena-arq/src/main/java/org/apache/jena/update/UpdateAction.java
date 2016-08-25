@@ -320,7 +320,7 @@ public class UpdateAction
     }
     
     /** Parse update operations into a GraphStore by reading it from a file */
-    @SuppressWarnings("resource")
+    //@SuppressWarnings("resource")
     public static void parseExecute(UsingList usingList, DatasetGraph dataset, String fileName, Binding inputBinding, String baseURI, Syntax syntax)
     { 
         InputStream in = null ;
@@ -412,24 +412,30 @@ public class UpdateAction
         if (uProc == null)
             throw new ARQException("No suitable update procesors are registered/able to execute your updates");
         
-        uProc.startRequest();
-        RealtimeValueBroker.prepareUpdate(); // MNakagawa
+        RealtimeValueBroker.UpdateContext context = null;
         try
         {
-            UpdateSink sink = new UsingUpdateSink(uProc.getUpdateSink(), usingList) ;
+            uProc.startRequest();
+        	context = RealtimeValueBroker.prepareUpdate(); // MNakagawa
+            UpdateSink sink = null;
             try
             {
+            	sink = new UsingUpdateSink(uProc.getUpdateSink(), usingList) ;
                 UpdateParser parser = UpdateFactory.setupParser(sink.getPrologue(), baseURI, syntax) ;
                 parser.parse(sink, input) ;
             }
             finally
             {
-                sink.close() ;
-            	RealtimeValueBroker.finishUpdate(); // MNakagawa
+            	if(sink != null){
+            		sink.close() ;
+            	}
             }
         }
         finally
         {
+        	if(context != null){
+        		RealtimeValueBroker.finishUpdate(context); // MNakagawa
+        	}
             uProc.finishRequest();
         }
     }
