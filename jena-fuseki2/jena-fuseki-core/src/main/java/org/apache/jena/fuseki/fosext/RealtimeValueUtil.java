@@ -1,5 +1,7 @@
 package org.apache.jena.fuseki.fosext;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
@@ -11,8 +13,11 @@ import java.util.zip.DataFormatException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.graph.Node;
+import org.slf4j.Logger;
 
 public class RealtimeValueUtil {
+    private final static Logger log = getLogger(RealtimeValueUtil.class);
+	
 	private final static Pattern PATH_PATTERN = Pattern.compile("/");
 
 	public static enum Operation {
@@ -20,30 +25,53 @@ public class RealtimeValueUtil {
 		READ,
 		;
 	}
+
+	private static final char PARM_ESCAPE = '-';
+	public static final String PARM_ESCAPE_PREFIX = String.valueOf(PARM_ESCAPE);
+	
+	public static final boolean isEscapeParm(String s){
+		if(s.charAt(0) == PARM_ESCAPE){
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	private static final String LINK_SPECIFIER =PARM_ESCAPE_PREFIX+"link";
+	private static final String PATH_TAG = RealtimeValueBroker.FOS_NAME_BASE+"パス識別子";
+	private static final String DEFAULT_PROXY_NAMESPACE = RealtimeValueBroker.FOS_TAG_BASE;
+	private static final String DEFAULT_PROPERTY_NAMESPACE = RealtimeValueBroker.FOS_NAME_BASE;
+	private static final String LINK_ANY = "*";
+	private static final String LINK_SEPARATOR = "-";
+	private static final Pattern LINK_TAG_PAIR = Pattern.compile("(.+)"+LINK_SEPARATOR+"(.+)");
+
+	
 	
 	private static final String HUB = "hub";
 	private static final String QUERY_HEAD =
-			"PREFIX :        <"+RealtimeValueBroker.FOS_NAME_BASE+">\n"+ 
+//			"PREFIX :        <"+RealtimeValueBroker.FOS_NAME_BASE+">\n"+ 
 			"SELECT ?hub\n"+
 			"WHERE {\n";
 
 	private static final String QUERY_MIDDLE1 =
-			"      ?s%d :パス識別子 <%s> .\n";
+			"      ?s%d <"+PATH_TAG+"> <%s> .\n";
 	
 	private static final String QUERY_MIDDLE2 =
-			"      ?s%d ?p%d ?s%d .\n" ;
+			"      ?s%d %s ?s%d .\n" ;
 
 	private static final String QUERY_TAIL =
 			"      ?s%d <%s> ?"+HUB+" .\n"+
 			"}\n";
 
-	private static final String DEFAULT_PROXY_NAMESPACE = RealtimeValueBroker.FOS_TAG_BASE;
-	private static final String DEFAULT_PROPERTY_NAMESPACE = RealtimeValueBroker.FOS_NAME_BASE;
-		
+	private static String linkAny(int i){
+		return "?t"+Integer.valueOf(i);
+	}
+	
 	/**
 	 * タグパスにマッチする物理ノードを検索する
 	 *  <pre>
-	 *   /fos/<update|read>/path/<dataset>/<tag0>/<tag1>/.../<tagN>
+	 *   /fos/<update|read>/path/<dataset>/<tag0>/<tag1>/.../<tagN>?link=構成
 	 *   pParts[offset] : <dataset>
 	 *  </pre>
 	 * @param pParts
@@ -51,34 +79,71 @@ public class RealtimeValueUtil {
 	 * @return
 	 * @throws DataFormatException
 	 */
-	public static RealtimeValueBroker.HubProxy[] findProxiesByPath(String[] pParts, int offset) throws DataFormatException {
+	public static RealtimeValueBroker.HubProxy[] findProxiesByPath(String[] pParts, int offset, GetParm parms) throws DataFormatException {
+		int pathLength = pParts.length-offset-2;
+		
+		if(pathLength < 0){
+			throw new DataFormatException("No path specified");
+		}
+
 		String partsNamespace = DEFAULT_PROXY_NAMESPACE;
 		String propertyNamespace = DEFAULT_PROPERTY_NAMESPACE;
-		if(offset+2 > pParts.length){
-			throw new DataFormatException("No path specified");
+		String defaultLink = null;
+		
+		if(parms.get(LINK_SPECIFIER) != null){
+			defaultLink = parms.get(LINK_SPECIFIER).get(0);
+			System.err.println("link:"+defaultLink);
+			if(defaultLink.equals(LINK_ANY)){
+				defaultLink = null;
+			}
 		}
 		
 		String datasetName = pParts[offset];
-		
+
 		// SPARQLクエリを生成する
+		int anyCnt = 0;
 		StringBuilder queryString = new StringBuilder(QUERY_HEAD);
-		int i = offset+1;
-		if(i < pParts.length-1){
-			for(;; ++i){
-				queryString.append(String.format(QUERY_MIDDLE1, i, partsNamespace+pParts[i]));
-				if(i>=pParts.length-2){
-					break;
+
+		int part = offset;
+		for(int i = 0; i < pathLength; ++i){
+			++part;
+			Matcher m = LINK_TAG_PAIR.matcher(pParts[part]);
+			String node;
+			String link;
+			if(i != 0 && m.matches()){
+				link = m.group(1);
+				if(link.equals(LINK_ANY)){
+					link = linkAny(anyCnt++);
 				}
-				queryString.append(String.format(QUERY_MIDDLE2, i, i, i+1));
+				else {
+					if(defaultLink == null){
+						link = linkAny(anyCnt++);
+					}
+					else {
+						link = "<"+propertyNamespace+defaultLink+">";
+					}
+				}
+				node = m.group(2);
 			}
-			queryString.append(String.format(QUERY_TAIL, i, propertyNamespace+pParts[i+1]));
+			else {
+				if(defaultLink == null){
+					link = linkAny(anyCnt++);
+				}
+				else {
+					link = defaultLink;
+				}
+				node = pParts[part];
+			}
+			
+			if(i != 0){
+				queryString.append(String.format(QUERY_MIDDLE2, i-1, link, i));
+			}
+			queryString.append(String.format(QUERY_MIDDLE1, i, partsNamespace+node));
 		}
-		else {
-			queryString.append(String.format(QUERY_TAIL, 0, propertyNamespace+pParts[i]));
-		}
-		System.err.println(queryString.toString());
-		
+		queryString.append(String.format(QUERY_TAIL, pathLength==0?0:pathLength-1, propertyNamespace+pParts[part+1]));
+
 		// クエリを実行する
+		System.err.println(queryString.toString());
 		List<Map<String,String>> result = SparqlAccess.execute(datasetName, queryString.toString());
 		if(result.size() == 0){
 			throw new DataFormatException("No path found");
@@ -87,10 +152,10 @@ public class RealtimeValueUtil {
 		// 結果を抽出する
 		RealtimeValueBroker.HubProxy[] ret = new RealtimeValueBroker.HubProxy[result.size()];
 		for(int j =0; j<result.size();++j){
-			String id = result.get(j).get("hub");
+			String id = result.get(j).get(HUB);
 			ret[j] = RealtimeValueBroker.getRootProxy(id);
 			if(ret[j] == null){
-				throw new DataFormatException(String.format("Unknown id:%s", id));
+				log.error(String.format("Unknown id:%s", id));
 			}
 		}
 		return ret;
@@ -104,21 +169,61 @@ public class RealtimeValueUtil {
 		}
 		return proxy;
 	}
+
 	
-	private static RealtimeValueBroker.HubProxy[] findProxies(Operation operation, String[] pParts, int offset) throws DataFormatException {
+	public static RealtimeValueBroker.HubProxy[] findProxiesByQuery(String datasetName, GetParm parms) throws DataFormatException {
+		List<String> queryArray = parms.get("-query");
+		if(queryArray == null){
+			throw new DataFormatException("No query parm.");
+		}
+		if(queryArray.size() != 1){
+			throw new DataFormatException("Duplicate query parms.");
+		}
+		String query = queryArray.get(0);
+		
+		// クエリを実行する
+		System.err.println(query);
+		List<Map<String,String>> result = SparqlAccess.execute(datasetName, query);
+		if(result.size() == 0){
+			throw new DataFormatException("No path found");
+		}
+		
+		// 結果を抽出する
+		RealtimeValueBroker.HubProxy[] ret = new RealtimeValueBroker.HubProxy[result.size()];
+		for(int j =0; j<result.size();++j){
+			Map<String,String> ansset = result.get(j);
+			if(ansset.size() != 1){
+				throw new DataFormatException("Multiple result elements??");
+			}
+			String id = result.get(j).values().iterator().next();
+			ret[j] = RealtimeValueBroker.getRootProxy(id);
+			if(ret[j] == null){
+				log.error(String.format("Unknown id:%s", id));
+			}
+		}
+		return ret;
+	}
+
+	private static RealtimeValueBroker.HubProxy[] findProxies(Operation operation, String[] pParts, int offset, GetParm parms) throws DataFormatException {
 		String selector = pParts[offset];
 		switch(selector){
 		case "path":
-			return findProxiesByPath(pParts, offset+1);
+			return findProxiesByPath(pParts, offset+1, parms);
 
 		case "id":
 			if(pParts.length-offset != 2){
-				throw new DataFormatException("Illegal path format");
+				throw new DataFormatException("Specify a id.");
 			}
 			RealtimeValueBroker.HubProxy[] proxy = new RealtimeValueBroker.HubProxy[1]; 
 			proxy[0] = findProxyById(pParts[offset+1]); 
 			return proxy;
 
+		case "query":
+			if(pParts.length-offset != 2){
+				throw new DataFormatException("Specify a dataset name");
+			}
+			return findProxiesByQuery(pParts[offset+1], parms);
+			
 		default:
 			throw new DataFormatException(String.format("Undefined selector:%s", selector));
 		}
@@ -151,7 +256,7 @@ public class RealtimeValueUtil {
 	public static TargetOperation findTargets(String path, GetParm parms) throws DataFormatException {
 		TargetOperation ret = new TargetOperation();
 	
-		List<String> test = parms.get("test");
+		//List<String> test = parms.get("test");
 		String epath;
 		try {
 			epath = URLDecoder.decode(path, "UTF-8");
@@ -174,7 +279,7 @@ public class RealtimeValueUtil {
 		}
 
 		try {
-			ret.setTargets(findProxies(ret.operation, pParts, 3));
+			ret.setTargets(findProxies(ret.operation, pParts, 3, parms));
 		}
 		catch(DataFormatException e){
 			throw new DataFormatException(String.format("%s:%s", e.toString(), epath));
@@ -242,8 +347,8 @@ public class RealtimeValueUtil {
 		return ret.toString();
 	}
 	
-    private final static Pattern INT_PAT = Pattern.compile("^[0-9]+$");
-    private final static Pattern FLOAT_PAT = Pattern.compile("^[0-9]*\\.[0-0]*$");
+    private final static Pattern INT_PAT = Pattern.compile("[\\-+]?\\d+");
+    private final static Pattern FLOAT_PAT = Pattern.compile("[\\-+]?\\d+\\.\\d*");//ちゃんとつくってない
     private final static String FLOAT_PAT_EXCEPT = ".";
 
     public static RealtimeValueBroker.Value str2value(String valueStr){

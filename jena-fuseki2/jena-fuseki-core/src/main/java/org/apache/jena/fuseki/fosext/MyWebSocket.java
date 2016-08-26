@@ -94,6 +94,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	@Override
 	public boolean informValueUpdate(RealtimeValueBroker.HubProxy proxy){
 		if(this.alive && this.session != null){
+			System.err.println("Inform:"+proxy.getURI());
 			this.session.getRemote().sendStringByFuture(RealtimeValueUtil.getRealtimeValue(proxy));
 			return true;
 		}
@@ -106,6 +107,8 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	public void onConnect(Session session) {
 		this.session = session;
 		log.debug("Connect");
+		System.out.println("Connect");
+		
 		if(this.targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
 			this.informAll();
 		}
@@ -164,6 +167,8 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 
 	@OnWebSocketClose
 	public void onClose(Session session, int statusCode, String reason){
+		log.debug("Close");
+		System.out.println("Close");
 		this.session = null;
 		this.alive = false;
 	}

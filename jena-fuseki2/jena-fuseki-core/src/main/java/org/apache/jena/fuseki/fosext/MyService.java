@@ -26,13 +26,10 @@ import java.io.IOException ;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
 import javax.servlet.ServletOutputStream ;
@@ -42,7 +39,6 @@ import javax.servlet.http.HttpServletResponse ;
 import org.apache.jena.atlas.io.IndentedLineBuffer;
 import org.apache.jena.atlas.lib.DateTimeUtils ;
 import org.apache.jena.atlas.lib.Lib;
-import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -50,7 +46,6 @@ import org.apache.jena.fuseki.server.DataAccessPointRegistry;
 import org.apache.jena.fuseki.server.DataService;
 import org.apache.jena.fuseki.servlets.ActionErrorException;
 import org.apache.jena.fuseki.servlets.ServletOps ;
-import org.apache.jena.graph.Node;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.Query;
@@ -115,7 +110,7 @@ public class MyService extends WebSocketServlet
 */
 	@Override
 	public void configure(WebSocketServletFactory factory) {
-		factory.getPolicy().setIdleTimeout(10000); // 10sec
+		//factory.getPolicy().setIdleTimeout(10000); // 10sec
 		//factory.register(MyWebSocket.class);
         // set a custom WebSocket creator
         factory.setCreator(new MyWebSocket.MyWebSocketCreator());
@@ -159,28 +154,32 @@ public class MyService extends WebSocketServlet
 
     
     private void writeOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets, Map<String,String[]> parms){
-    	if(parms.size() == 1){
-    		String[][] svalues = parms.values().toArray(new String[1][]);
-    		if(svalues[0][0].length() == 0){
-    			// 「パス?123」のように値が1個だけ指定されている
-    			String[] keys = parms.keySet().toArray(new String[1]);
-    			
-    			// このときには「パス?値=123」と同等の動作を行う。
-    			parms = new HashMap<>();
-    			String[] v = new String[1];
-    			v[0] = keys[0];
-    			parms.put(RealtimeValueBroker.FOS_DEFAULT_VALUE_TAG, v);
-    		}
-    	}
-
     	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value>> values = new ArrayList<>(); 
     	for(Entry<String,String[]> e: parms.entrySet()){
-    		if(e.getValue().length != 1){
-        		Fuseki.serverLog.warn("Duplicate param:"+e.getKey());
+    		String key = e.getKey();
+    		if(RealtimeValueUtil.isEscapeParm(key)){
+    			//制御パラメータ
+    			continue;
     		}
-    		String valueStr = e.getValue()[0];
-    		String key = RealtimeValueBroker.FOS_NAME_BASE+e.getKey();
-    		System.err.println(key+"  "+valueStr);
+
+    		String[] vs = e.getValue();
+    		String valueStr;
+    		if(vs.length == 1){
+    			//正しいパラメータ
+        		valueStr = e.getValue()[0];
+        		key = RealtimeValueBroker.FOS_NAME_BASE+key;
+    		}
+    		else if(vs.length == 0){
+    			//値名省略パラメータ
+    			valueStr = key;
+    			key = RealtimeValueBroker.FOS_DEFAULT_VALUE_TAG;
+    		}
+    		else {
+        		Fuseki.serverLog.error("Duplicate param:"+key);
+        		continue;
+    		}
+    		
+    		System.err.println("xxxx "+key+"  "+valueStr);
     		RealtimeValueBroker.Value value = RealtimeValueUtil.str2value(valueStr);
 			values.add(new RealtimeValueBroker.Pair<>(key, value));
     	}
@@ -279,6 +278,7 @@ public class MyService extends WebSocketServlet
         DataService dSrv ;
         
         String datasetUri = "/test01";
+        log.debug("test");
         dataAccessPoint = DataAccessPointRegistry.get().get(datasetUri) ;
         if ( dataAccessPoint == null ) {
         	System.err.println("No dataset for URI: "+datasetUri) ;

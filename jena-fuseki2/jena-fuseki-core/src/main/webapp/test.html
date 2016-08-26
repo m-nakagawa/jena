@@ -10,10 +10,11 @@
     <!--<script src="js/jquery-1.11.3.min.js"></script>-->
     <script type="text/javascript">
     console.log("Start");
-//var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/1F/居間/温度');
-//var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/居間/温度');
-var ws = new WebSocket('ws://localhost:3030/fos/read/path/test01/温度?test=123');
-//var ws = new WebSocket('ws://localhost:3030/fos/update/id/1');
+    path1 ='ws://localhost:3030/fos/read/path/test01/温度?test=123'
+    path2 ='ws://localhost:3030/fos/update/path/test01/2F/居間/温度'
+    var ws = new WebSocket(path1);
+    //var ws = new WebSocket('ws://localhost:3030/fos/update/id/1');
+
 ws.onopen = function () {
     console.log("Connecting is success!!");
 };
@@ -29,7 +30,7 @@ ws.onmessage = function (me) {
       var tgt = "div#w"+j.id;
       console.log(tgt);
       $(tgt).text(receivedData);
-      if(j.id == 1){
+      if(j.id == 9){
         ws2.send('{"値":'+cnt+'}')
       }
       cnt = cnt+1
@@ -39,7 +40,11 @@ ws.onmessage = function (me) {
     }
 };
 
-var ws2 = new WebSocket('ws://localhost:3030/fos/update/path/test01/2F/居間/温度');
+ws.onclose = function (me) {
+   console.log("Colosed")
+}
+
+var ws2 = new WebSocket(path2)
 
 ws2.onopen = function () {
     console.log("2 Connecting is success!!");
@@ -55,6 +60,9 @@ ws2.onmessage = function (me) {
     //$("div#w2").text(receivedData);
 };
 
+ws2.onclose = function (me) {
+   console.log("2Colosed")
+}
     </script>
 
    <p>test</p>

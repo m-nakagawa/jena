@@ -129,7 +129,7 @@ public class RealtimeValueBroker {
 	//private static Map<Object,ReadContext> locks = new HashMap<>();
 	// 全Proxyを一時停止
 	public static void freeze(Object owner){
-		System.err.println("FREEZE--------");
+		//System.err.println("FREEZE--------");
 		//System.err.println("FREEZE--------"+Integer.toString(debugCnt));
 		//ReadLock lock = readWriteLock.readLock();
 		//lock.lock();
@@ -137,7 +137,7 @@ public class RealtimeValueBroker {
 	}
 	
 	public static void release(Object owner){
-		System.err.println("RELEASE--------");
+		//System.err.println("RELEASE--------");
 		//ReadContext context = locks.get(owner);
 		//context.lock.unlock();
 	}
@@ -181,7 +181,7 @@ public class RealtimeValueBroker {
 	
 	// return true: Proxyがデータを消費した false:新規登録した
 	public static boolean isProxy(Node g, Node s, Node p, Node o){
-		System.err.println(String.format("%s:%s:%s:%s", g.toString(), s.toString(), p.toString(), o.toString()));
+		//System.err.println(String.format("XXX %s:%s:%s:%s", g.toString(), s.toString(), p.toString(), o.toString()));
 		if(s instanceof Node_URI ){
 			Matcher mHolder = fosProxyHolder.matcher(s.toString());
 			if(mHolder.matches()){
@@ -475,7 +475,7 @@ public class RealtimeValueBroker {
 				leaf.setCurrentValue(value, instant);
 
 				updatedProxies.add(this);
-				System.err.println(String.format("VALUE:%s:%s:%s:%s:%s", uri, predicate, value.dtype, value.value, value.lang));
+				//System.err.println(String.format("VALUE:%s:%s:%s:%s:%s", uri, predicate, value.dtype, value.value, value.lang));
 			}
 			else {
 				System.err.println(String.format("UNDEFINED LEAF:%s:%s:%s", uri, predicate, node.toString()));
