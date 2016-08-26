@@ -10,10 +10,10 @@
     <!--<script src="js/jquery-1.11.3.min.js"></script>-->
     <script type="text/javascript">
     console.log("Start");
-    path1 ='ws://localhost:3030/fos/read/path/test01/温度?test=123'
-    path2 ='ws://localhost:3030/fos/update/path/test01/2F/居間/温度'
+    path1 ='ws://localhost:3030/fos/test01/read/path/温度?test=123'
+    path2 ='ws://localhost:3030/fos/test01/update/path/2F/居間/温度'
     var ws = new WebSocket(path1);
-    //var ws = new WebSocket('ws://localhost:3030/fos/update/id/1');
+    //var ws = new WebSocket('ws://localhost:3030/fos/test01/update/id/1');
 
 ws.onopen = function () {
     console.log("Connecting is success!!");

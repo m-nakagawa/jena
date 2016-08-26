@@ -201,8 +201,7 @@ public class MyService extends WebSocketServlet
     	}
     }
     
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+    protected void doCommon(HttpServletRequest req, HttpServletResponse resp, boolean write) {
     	final Map<String,String[]> parms = req.getParameterMap();
 
     	resp.setCharacterEncoding("UTF-8");
@@ -230,19 +229,24 @@ public class MyService extends WebSocketServlet
     }
     
     @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+    	doCommon(req, resp, false);
+    }
+    
+    @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) {
-
+    	doCommon(req, resp, true);
     }
     
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-        doPut(req, resp); 
+    	doCommon(req, resp, true);
     }
     
 
     @Override
     protected void doHead(HttpServletRequest req, HttpServletResponse resp) {
-        doCommon(req, resp); 
+        //doCommon(req, resp); 
     }
 
     String queryString ="SELECT * WHERE { ?a ?b ?c . }";

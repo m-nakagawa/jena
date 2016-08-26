@@ -42,6 +42,10 @@ import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Node_URI;
 import org.slf4j.Logger;
 
+/**
+ * @author m-nakagawa
+ *
+ */
 public class RealtimeValueBroker {
     private final static Logger log = getLogger(RealtimeValueBroker.class);
 

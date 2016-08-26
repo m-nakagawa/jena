@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.jena.fuseki.fosext;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -15,6 +33,10 @@ import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.graph.Node;
 import org.slf4j.Logger;
 
+/**
+ * @author m-nakagawa
+ *
+ */
 public class RealtimeValueUtil {
     private final static Logger log = getLogger(RealtimeValueUtil.class);
 	
@@ -71,7 +93,7 @@ public class RealtimeValueUtil {
 	/**
 	 * タグパスにマッチする物理ノードを検索する
 	 *  <pre>
-	 *   /fos/<update|read>/path/<dataset>/<tag0>/<tag1>/.../<tagN>?link=構成
+	 *   /fos/<dataset>/<update|read>/path/<tag0>/<tag1>/.../<tagN>?link=構成
 	 *   pParts[offset] : <dataset>
 	 *  </pre>
 	 * @param pParts
@@ -79,8 +101,8 @@ public class RealtimeValueUtil {
 	 * @return
 	 * @throws DataFormatException
 	 */
-	public static RealtimeValueBroker.HubProxy[] findProxiesByPath(String[] pParts, int offset, GetParm parms) throws DataFormatException {
-		int pathLength = pParts.length-offset-2;
+	public static RealtimeValueBroker.HubProxy[] findProxiesByPath(String datasetName, String[] pParts, int offset, GetParm parms) throws DataFormatException {
+		int pathLength = pParts.length-offset-1;
 		
 		if(pathLength < 0){
 			throw new DataFormatException("No path specified");
@@ -98,15 +120,14 @@ public class RealtimeValueUtil {
 			}
 		}
 		
-		String datasetName = pParts[offset];
+		//String datasetName = pParts[offset];
 
 		// SPARQLクエリを生成する
 		int anyCnt = 0;
 		StringBuilder queryString = new StringBuilder(QUERY_HEAD);
 
 		int part = offset;
-		for(int i = 0; i < pathLength; ++i){
-			++part;
+		for(int i = 0; i < pathLength; ++i, ++part){
 			Matcher m = LINK_TAG_PAIR.matcher(pParts[part]);
 			String node;
 			String link;
@@ -140,7 +161,7 @@ public class RealtimeValueUtil {
 			}
 			queryString.append(String.format(QUERY_MIDDLE1, i, partsNamespace+node));
 		}
-		queryString.append(String.format(QUERY_TAIL, pathLength==0?0:pathLength-1, propertyNamespace+pParts[part+1]));
+		queryString.append(String.format(QUERY_TAIL, pathLength==0?0:pathLength-1, propertyNamespace+pParts[part]));
 
 		// クエリを実行する
 		System.err.println(queryString.toString());
@@ -204,11 +225,11 @@ public class RealtimeValueUtil {
 		return ret;
 	}
 
-	private static RealtimeValueBroker.HubProxy[] findProxies(Operation operation, String[] pParts, int offset, GetParm parms) throws DataFormatException {
+	private static RealtimeValueBroker.HubProxy[] findProxies(String datasetName, Operation operation, String[] pParts, int offset, GetParm parms) throws DataFormatException {
 		String selector = pParts[offset];
 		switch(selector){
 		case "path":
-			return findProxiesByPath(pParts, offset+1, parms);
+			return findProxiesByPath(datasetName, pParts, offset+1, parms);
 
 		case "id":
 			if(pParts.length-offset != 2){
@@ -219,10 +240,10 @@ public class RealtimeValueUtil {
 			return proxy;
 
 		case "query":
-			if(pParts.length-offset != 2){
-				throw new DataFormatException("Specify a dataset name");
+			if(pParts.length-offset != 1){
+				throw new DataFormatException("Too many path elements.");
 			}
-			return findProxiesByQuery(pParts[offset+1], parms);
+			return findProxiesByQuery(datasetName, parms);
 			
 		default:
 			throw new DataFormatException(String.format("Undefined selector:%s", selector));
@@ -265,21 +286,22 @@ public class RealtimeValueUtil {
 			throw new DataFormatException("Illegal path format:"+path);
 		}
 		
-		// fos/(update|read)/(path|id|query)/<dataset>/....
+		// /fos/<dataset>/(update|read)/(path|id|query)/....
 		String[] pParts = PATH_PATTERN.split(epath);
 		if(pParts.length < 4 ){
 			throw new DataFormatException("Illegal path format:"+epath);
 		}
 
+		String datasetName = pParts[2];
 		try {
-			ret.setOperation(Operation.valueOf(pParts[2].toUpperCase()));
+			ret.setOperation(Operation.valueOf(pParts[3].toUpperCase()));
 		}
 		catch(IllegalArgumentException e){
-			throw new DataFormatException(String.format("Unknown operation:%s:%s", pParts[2], epath));
+			throw new DataFormatException(String.format("Unknown operation:%s:%s", pParts[3], epath));
 		}
 
 		try {
-			ret.setTargets(findProxies(ret.operation, pParts, 3, parms));
+			ret.setTargets(findProxies(datasetName, ret.operation, pParts, 4, parms));
 		}
 		catch(DataFormatException e){
 			throw new DataFormatException(String.format("%s:%s", e.toString(), epath));
