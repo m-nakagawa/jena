@@ -142,10 +142,18 @@ public class MyService extends WebSocketServlet
     	try{
     		PrintWriter writer = resp.getWriter();
     		writer.println("[");
+    		boolean prev = false;
     		for(RealtimeValueBroker.HubProxy p: targets){
-    			writer.println(RealtimeValueUtil.getRealtimeValue(p));
+    			//TODO pがnullを含まないように
+    			if(p != null){
+    				if(prev){
+    					writer.print(",\n");
+    				}
+    				writer.print(RealtimeValueUtil.getRealtimeValue(p));
+    				prev = true;
+    			}
     		}
-    		writer.println("]");
+    		writer.println("\n]");
     	} catch (IOException ex) {
     		Fuseki.serverLog.warn("myservice :: IOException :: "+ex.getMessage());
     	}
@@ -169,11 +177,13 @@ public class MyService extends WebSocketServlet
         		valueStr = e.getValue()[0];
         		key = RealtimeValueBroker.FOS_NAME_BASE+key;
     		}
+    		/*
     		else if(vs.length == 0){
     			//値名省略パラメータ
     			valueStr = key;
     			key = RealtimeValueBroker.FOS_DEFAULT_VALUE_TAG;
     		}
+    		*/
     		else {
         		Fuseki.serverLog.error("Duplicate param:"+key);
         		continue;
@@ -188,9 +198,12 @@ public class MyService extends WebSocketServlet
     	try {
     		context = RealtimeValueBroker.prepareUpdate();
     		for(RealtimeValueBroker.HubProxy p: targets){
-    			System.err.println("---"+p.getURI());
-    			for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
-    				p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    			//TODO pがnullでないように
+    			if(p != null){
+    				System.err.println("---"+p.getURI());
+    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
+    					p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    				}
     			}
     		}
     	}

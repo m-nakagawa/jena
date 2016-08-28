@@ -199,7 +199,7 @@
 
   <servlet-mapping><!-- MNakagawa -->
     <servlet-name>MyServlet</servlet-name>
-    <url-pattern>/fos/*</url-pattern>
+    <url-pattern>/openmasami/*</url-pattern>
   </servlet-mapping>
   
   <servlet>

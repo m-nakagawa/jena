@@ -102,6 +102,7 @@ public class RealtimeValueUtil {
 	 * @throws DataFormatException
 	 */
 	public static RealtimeValueBroker.HubProxy[] findProxiesByPath(String datasetName, String[] pParts, int offset, GetParm parms) throws DataFormatException {
+		//TODO 返り値にnullを含むことがあるので、Listを返すようにする。
 		int pathLength = pParts.length-offset-1;
 		
 		if(pathLength < 0){
@@ -175,9 +176,11 @@ public class RealtimeValueUtil {
 		for(int j =0; j<result.size();++j){
 			String id = result.get(j).get(HUB);
 			ret[j] = RealtimeValueBroker.getRootProxy(id);
+			/*
 			if(ret[j] == null){
 				log.error(String.format("Unknown id:%s", id));
 			}
+			*/
 		}
 		return ret;
 	}
@@ -218,9 +221,11 @@ public class RealtimeValueUtil {
 			}
 			String id = result.get(j).values().iterator().next();
 			ret[j] = RealtimeValueBroker.getRootProxy(id);
+			/*
 			if(ret[j] == null){
 				log.error(String.format("Unknown id:%s", id));
 			}
+			*/
 		}
 		return ret;
 	}

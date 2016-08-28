@@ -53,16 +53,16 @@ public class RealtimeValueBroker {
 	public static final String FOS_LOCAL_NAME_BASE = FOS_NAME_BASE+"local/";
 	public static final String FOS_TAG_BASE = FOS_LOCAL_NAME_BASE+"label#";
 	public static final String FOS_PROXY_BASE = FOS_LOCAL_NAME_BASE+"proxy/";
-	public static final String FOS_PROXY_EMPTY = FOS_PROXY_BASE+"empty";
+	//public static final String FOS_PROXY_EMPTY = FOS_PROXY_BASE+"empty";
 	public static final String FOS_PROXY_UNDEFINED = FOS_PROXY_BASE+"undefined";
-	public static final String FOS_PROXY_HOLDER = FOS_PROXY_BASE+"holder#";
-	public static final String FOS_PROXY_VALUE = FOS_PROXY_BASE+"value#";
+	public static final String FOS_PROXY_HOLDER = FOS_PROXY_BASE+"hub#";
+	public static final String FOS_PROXY_VALUE = FOS_PROXY_BASE+"leaf#";
 	public static final String FOS_PROXY_INSTANT_SHORT = "時刻";
 	public static final String FOS_PROXY_DATETIME_SHORT = "日時";
 	public static final String FOS_PROXY_INSTANT = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT;
 	public static final String FOS_PROXY_DATETIME = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT;
-	public static final String FOS_DEFAULT_VALUE_TAG = "値";
-	public static final String FOS_PROXY_ID = "id";
+	//public static final String FOS_DEFAULT_VALUE_TAG = "値";
+	public static final String FOS_PROXY_ID = "id"; //Leafノードのidを返すときの値のラベル
 	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.*)$"); 
 	private static final Pattern fosProxyValue = Pattern.compile(FOS_PROXY_VALUE+"(.*)$"); 
 	

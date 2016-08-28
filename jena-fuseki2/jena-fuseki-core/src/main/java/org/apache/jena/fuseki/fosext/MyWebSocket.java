@@ -79,14 +79,22 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		final Map<String,List<String>> parms = req.getParameterMap();
 		this.targetOperation = RealtimeValueUtil.findTargets(path, (index)->parms.get(index)); 
 
-		for(RealtimeValueBroker.HubProxy proxy : this.targetOperation.getTargets()){
-			proxy.addConsumer(this);
+		if(this.targetOperation.getTargets() != null){
+			for(RealtimeValueBroker.HubProxy proxy : this.targetOperation.getTargets()){
+				//TODO こたえにnullを含まないようにする
+				if(proxy != null){
+					proxy.addConsumer(this);
+				}
+			}
 		}
 	}
 
 	private void informAll(){
 		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargets()){
-			this.informValueUpdate(p);
+			//TODO proxy != nullであるようにする
+			if(p != null){
+				this.informValueUpdate(p);
+			}
 		}
 	}
 	
@@ -140,10 +148,13 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
     	try {
     		context = RealtimeValueBroker.prepareUpdate();
     		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargets()){
-    			System.err.println("---"+p.getURI());
-    			for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
-    				System.err.println("-----"+e.getKey()+"  "+e.getValue().getValue().toString());
-    				p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    			//TODO p != nullであるようにする
+    			if(p != null){
+    				System.err.println("---"+p.getURI());
+    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
+    					System.err.println("-----"+e.getKey()+"  "+e.getValue().getValue().toString());
+    					p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    				}
     			}
     		}
     	}
