@@ -21,6 +21,8 @@ package org.apache.jena.sparql.core.mem;
 import static java.util.stream.Stream.empty;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.jena.atlas.lib.persistent.PMap;
@@ -97,6 +99,69 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     protected Triple unmap(final Node x1, final Node x2, final Node x3) {
     	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
         //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
+    	assert false;
+        return apply(reverse, x1, x2, x3, Triple::new); // MNakagawa
+        //return apply(reverse, x1, x2, x3, Triple::new);
+    }
+
+    private Stream<Triple> xunmap(final Node x1, final Node x2, final Node x3) {
+    	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
+        //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
+    	Triple t = apply(reverse, x1, x2, x3, Triple::new);
+    	List<Node> nodes = MyTriple.proxy2value(t.getObject());
+    	if(nodes != null){
+    		List<Triple> ret = new ArrayList<>();
+    		for(Node n : nodes){
+    			ret.add(new Triple(t.getSubject(), t.getPredicate(), n));
+    		}
+    		return ret.stream();
+    	}
+    	else {
+    		return Stream.of(t); // MNakagawa
+    	}
+        //return apply(reverse, x1, x2, x3, Triple::new);
+    }
+    
+
+    /**
+     * We descend through the nested {@link PMap}s building up {@link Stream}s of partial tuples from which we develop a
+     * {@link Stream} of full tuples which is our result. Use {@link Node#ANY} or <code>null</code> for a wildcard.
+     */
+    @SuppressWarnings("unchecked") // Because of (Stream<Triple>) -- but why is that needed?
+    private TFunction3<Node, Stream<Triple>> find = (first, second, third) -> {
+        debug("Querying on three-tuple pattern: {} {} {} .", first, second, third);
+        //System.out.println(String.format("XX %s:%s:%s", first.toString(), second.toString(), third.toString()));// MNakagawa
+        final ThreeTupleMap threeTuples = local().get();
+        if (isConcrete(first)) {
+            debug("Using a specific first slot value.");
+            return (Stream<Triple>) threeTuples.get(first).map(twoTuples -> {
+                if (isConcrete(second)) {
+                    debug("Using a specific second slot value.");
+                    return twoTuples.get(second).map(oneTuples -> {
+                        if (isConcrete(third)) {
+                            debug("Using a specific third slot value.");
+                            return oneTuples.contains(third) ? xunmap(first, second, third) : empty();
+                            //return oneTuples.contains(third) ? Stream.of(xunmap(first, second, third)) : empty();
+                        }
+                        debug("Using a wildcard third slot value.");
+                        return oneTuples.stream().flatMap(slot3 -> xunmap(first, second, slot3));
+                    }).orElse(empty());
+                }
+                debug("Using wildcard second and third slot values.");
+                return twoTuples
+                    .flatten((slot2, oneTuples) -> oneTuples.stream().flatMap(slot3 -> xunmap(first, slot2, slot3)));
+            }).orElse(empty());
+        }
+        debug("Using a wildcard for all slot values.");
+        return threeTuples.flatten((slot1, twoTuples) -> twoTuples
+                                   .flatten((slot2, oneTuples) -> oneTuples.stream().flatMap(slot3 -> xunmap(slot1, slot2, slot3))));
+    };
+    /*
+    // MNakagawa
+    @Override
+    protected Triple unmap(final Node x1, final Node x2, final Node x3) {
+    	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
+        //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
         return apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
         //return apply(reverse, x1, x2, x3, Triple::new);
     }    
@@ -104,6 +169,7 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
      * We descend through the nested {@link PMap}s building up {@link Stream}s of partial tuples from which we develop a
      * {@link Stream} of full tuples which is our result. Use {@link Node#ANY} or <code>null</code> for a wildcard.
      */
+    /*
     @SuppressWarnings("unchecked") // Because of (Stream<Triple>) -- but why is that needed?
     private TFunction3<Node, Stream<Triple>> find = (first, second, third) -> {
         debug("Querying on three-tuple pattern: {} {} {} .", first, second, third);
@@ -132,6 +198,8 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
         return threeTuples.flatten((slot1, twoTuples) -> twoTuples
                                    .flatten((slot2, oneTuples) -> oneTuples.stream().map(slot3 -> unmap(slot1, slot2, slot3))));
     };
+    */
+    
     
     @Override
     protected TConsumer3<Node> add() {

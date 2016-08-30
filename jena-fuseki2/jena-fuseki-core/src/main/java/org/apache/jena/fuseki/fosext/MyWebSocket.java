@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.zip.DataFormatException;
 
 import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.fosext.RealtimeValueBroker;
@@ -135,12 +136,24 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	public void onText(String message) {
 		System.out.println("onMessage: " + message);
 		JsonObject j = JSON.parse(message);
-    	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value>> values = new ArrayList<>(); 
+    	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]>> values = new ArrayList<>(); 
 		for(Entry<String,JsonValue> e: j.entrySet()){
 			String key = RealtimeValueBroker.FOS_NAME_BASE+e.getKey();
 			JsonValue v = e.getValue();
-    		System.err.println("++++ "+key+"  "+v.toString());
-    		RealtimeValueBroker.Value value = RealtimeValueUtil.str2value(v.toString());
+			RealtimeValueBroker.Value[] value;
+			if(v.isArray()){
+				System.err.println("++++a "+key+"  "+v.toString());
+				JsonArray varray = v.getAsArray();
+				value = new RealtimeValueBroker.Value[varray.size()];
+				for(int i = 0; i < varray.size(); ++i){
+					value[i] = RealtimeValueUtil.str2value(varray.get(i).toString());
+				}
+			}
+			else {
+				System.err.println("++++ "+key+"  "+v.toString());
+				value = new RealtimeValueBroker.Value[1];
+				value[0] = RealtimeValueUtil.str2value(v.toString());
+			}
 			values.add(new RealtimeValueBroker.Pair<>(key, value));
     	}
     	
@@ -151,9 +164,8 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
     			//TODO p != nullであるようにする
     			if(p != null){
     				System.err.println("---"+p.getURI());
-    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
-    					System.err.println("-----"+e.getKey()+"  "+e.getValue().getValue().toString());
-    					p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]> e: values){
+    					p.setValues(e.getKey(), e.getValue(), context.getInstant());
     				}
     			}
     		}

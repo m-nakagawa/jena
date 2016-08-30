@@ -20,6 +20,10 @@
  */
 package org.apache.jena.fosext;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Node_URI;
 import org.apache.jena.graph.Triple;
@@ -29,8 +33,20 @@ import org.apache.jena.graph.Triple;
  * @author m-nakagawa
  * 
  */
-public class MyTriple extends Triple {
-	private static Node proxy2value(Node node){
+//public class MyTriple extends Triple {
+public class MyTriple {
+	public static List<Node> proxy2value(Node node){
+		if(node instanceof Node_URI){
+			RealtimeValueBroker.LeafProxy proxy = RealtimeValueBroker.getLeafProxy(node.getURI());
+			if(proxy != null){
+				Node[] ret = proxy.getCurrentValue();
+				return Arrays.asList(ret);
+			}
+		}
+		return null;
+	}
+/*	
+	private static Node proxy2singleValue(Node node){
 		if(node instanceof Node_URI){
 			RealtimeValueBroker.LeafProxy proxy = RealtimeValueBroker.getLeafProxy(node.getURI());
 			if(proxy != null){
@@ -39,11 +55,12 @@ public class MyTriple extends Triple {
 		}
 		return node;
 	}
-	
+
 	public MyTriple( Node s, Node p, Node o ){
 		super(
-				proxy2value(s),
-				proxy2value(p),
-				proxy2value(o)); //!MNakagawa oだけか？
+				s,
+				p,
+				proxy2singleValue(o)); //!MNakagawa oだけか？
 	}
+	*/
 }

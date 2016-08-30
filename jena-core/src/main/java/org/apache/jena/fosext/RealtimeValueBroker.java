@@ -56,15 +56,19 @@ public class RealtimeValueBroker {
 	//public static final String FOS_PROXY_EMPTY = FOS_PROXY_BASE+"empty";
 	public static final String FOS_PROXY_UNDEFINED = FOS_PROXY_BASE+"undefined";
 	public static final String FOS_PROXY_HOLDER = FOS_PROXY_BASE+"hub#";
-	public static final String FOS_PROXY_VALUE = FOS_PROXY_BASE+"leaf#";
+	private static final String LEAF_ID = "leaf";
+	private static final String ARRAY_ID = "array";
+	public static final String FOS_PROXY_LEAF = FOS_PROXY_BASE+LEAF_ID+"#";
+	public static final String FOS_PROXY_ARRAY = FOS_PROXY_BASE+ARRAY_ID+"#";
 	public static final String FOS_PROXY_INSTANT_SHORT = "時刻";
 	public static final String FOS_PROXY_DATETIME_SHORT = "日時";
 	public static final String FOS_PROXY_INSTANT = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT;
 	public static final String FOS_PROXY_DATETIME = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT;
 	//public static final String FOS_DEFAULT_VALUE_TAG = "値";
 	public static final String FOS_PROXY_ID = "id"; //Leafノードのidを返すときの値のラベル
-	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.*)$"); 
-	private static final Pattern fosProxyValue = Pattern.compile(FOS_PROXY_VALUE+"(.*)$"); 
+	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.+)$"); 
+	//private static final Pattern fosProxyLeaf = Pattern.compile(FOS_PROXY_LEAF+"(.+)$"); 
+	private static final Pattern fosProxyLeafOrArray = Pattern.compile(FOS_PROXY_BASE+"("+LEAF_ID+"|"+ARRAY_ID+")#(.+)$"); 
 	
 	private static Map<String,LeafProxy> leafProxyIndex = new ConcurrentHashMap<>();
 	private static Map<String,HubProxy> rootProxyIndex = new ConcurrentHashMap<>();
@@ -82,6 +86,21 @@ public class RealtimeValueBroker {
 	}
 	
 	
+	private static final Node[] NULL_VALUE_NODE = new Node[1];
+	static {
+		NULL_VALUE_NODE[0] = NodeFactory.createLiteralByValue("", "", XSDDatatype.XSDstring);
+	}
+	
+	public interface LeafProxy {
+		String getURI();
+		void setCurrentValue(Value value, Instant instant);
+		void setCurrentValues(Value[] values, Instant instant);
+		Instant getUpdateInstant();
+		Node[] getCurrentValue();
+		boolean isArray();
+	}
+	
+
 	public static class TestProxy implements LeafProxy {
 		private final String uri;
 		private int value;
@@ -112,9 +131,18 @@ public class RealtimeValueBroker {
 			}
 		}
 		
-		public Node getCurrentValue(){
+		public void setCurrentValues(Value[] value, Instant instant){
+		}
+		
+		public Node[] getCurrentValue(){
 			++value;
-			return NodeFactory.createLiteral(Integer.toString(value), XSDDatatype.XSDinteger);
+			Node[] ret = new Node[1];
+			ret[0] = NodeFactory.createLiteral(Integer.toString(value), XSDDatatype.XSDinteger);
+			return ret;
+		}
+		
+		public boolean isArray(){
+			return false;
 		}
 	}
 
@@ -190,8 +218,9 @@ public class RealtimeValueBroker {
 			Matcher mHolder = fosProxyHolder.matcher(s.toString());
 			if(mHolder.matches()){
 				if(o instanceof Node_URI){
-					Matcher mValue = fosProxyValue.matcher(o.toString());
+					Matcher mValue = fosProxyLeafOrArray.matcher(o.toString());
 					if(mValue.matches()){
+						boolean array = mValue.group(1).equals(ARRAY_ID);
 						// 登録 
 						HubProxy root = getRootProxy(s.toString());
 						if(root == null){
@@ -200,7 +229,7 @@ public class RealtimeValueBroker {
 						}
 						LeafProxy leaf = getLeafProxy(o.toString());
 						if(leaf == null){
-							leaf = new ValueContainer(o.toString());
+							leaf = new ValueContainer(o.toString(), array);
 						}
 						root.addLeaf(p.toString(), leaf);
 						System.err.println(String.format("REGISTERED:%s:%s:%s", s.toString(), p.toString(), o.toString()));
@@ -260,13 +289,6 @@ public class RealtimeValueBroker {
 
 	public static final Pattern URI_SPLITTER = Pattern.compile("^(.*[#|/])(.+)$");
 	
-	public interface LeafProxy {
-		String getURI();
-		void setCurrentValue(Value value, Instant instant);
-		Instant getUpdateInstant();
-		Node getCurrentValue();
-	}
-	
 	static void addLeafProxy(LeafProxy proxy){
 		leafProxyIndex.put(proxy.getURI(), proxy);
 	}
@@ -285,11 +307,19 @@ public class RealtimeValueBroker {
 
 	static class ValueContainer implements LeafProxy {
 		private final String uri;
-		private Value value;
-		private Instant instant;
-		private ValueContainer(String uri){
+		private final boolean array;
+		private Node[] value;
+		private Instant instant; // 通常はHUBの方の時刻を使う。これは将来の拡張用
+		
+		private ValueContainer(String uri, boolean array){
 			this.uri = uri;
-			this.value = null;
+			this.array = array;
+			if(this.array){
+				this.value = new Node[0];
+			}
+			else {
+				this.value = NULL_VALUE_NODE;
+			}
 			this.instant = null;
 			addLeafProxy(this);
 		}
@@ -301,23 +331,33 @@ public class RealtimeValueBroker {
 
 		@Override
 		public void setCurrentValue(Value value, Instant instant){
-			this.value = value;
+			this.instant = instant;
+			this.value = new Node[1];
+			this.value[0] = NodeFactory.createLiteralByValue(value.getValue(), value.getLang(), value.getDtype()); 
+		}
+		
+		@Override
+		public void setCurrentValues(Value[] values, Instant instant){
+			this.instant = instant;
+			this.value = new Node[values.length];
+			for(int i = 0; i < values.length; ++i){
+				this.value[i] = NodeFactory.createLiteralByValue(values[i].getValue(), values[i].getLang(), values[i].getDtype());
+			}
 		}
 		
 		@Override
 		public Instant getUpdateInstant(){
 			return this.instant;
 		}
-
+		
 		@Override
-		public Node getCurrentValue(){
-			if(value != null){
-				return NodeFactory.createLiteralByValue(value.getValue(), value.getLang(), value.getDtype());
-			}
-			else {
-				//return NodeFactory.createURI(FOS_PROXY_EMPTY);
-				return NodeFactory.createLiteralByValue("", "", XSDDatatype.XSDstring);
-			}
+		public Node[] getCurrentValue(){
+			return this.value;
+		}
+		
+		@Override
+		public boolean isArray(){
+			return this.array;
 		}
 	}
 	
@@ -346,7 +386,8 @@ public class RealtimeValueBroker {
 
 	public static class HubProxy {
 		private final String uri;
-		private final Node id;
+		//private final Node id;
+		private final String idStr;
 		private final Map<String,LeafProxy> proxies;
 		private final Set<ValueConsumer> consumers;
 		private LeafProxy datetime; // 日時
@@ -361,14 +402,13 @@ public class RealtimeValueBroker {
 			this.consumers = new CopyOnWriteArraySet<>();
 			this.propertyNames = new ArrayList<>();
 			Matcher m = URI_SPLITTER.matcher(uri);
-			String idStr;
 			if(m.matches()){
-				idStr = m.group(2);
+				this.idStr = m.group(2);
 			}
 			else {
-				idStr = uri;
+				this.idStr = uri;
 			}
-			this.id = NodeFactory.createLiteral(idStr, "", XSDDatatype.XSDstring);
+			//this.id = NodeFactory.createLiteral(idStr, "", XSDDatatype.XSDstring);
 		}
 
 		public void addConsumer(ValueConsumer consumer){
@@ -383,6 +423,10 @@ public class RealtimeValueBroker {
 			return this.uri;
 		}
 
+		public String getIdStr(){
+			return this.idStr;
+		}
+		
 		private void makeShortnameIndex(){
 			Map<String,List<LeafProxy>> map = new HashMap<>();
 			Map<LeafProxy,String> reverse = new HashMap<>();
@@ -486,10 +530,10 @@ public class RealtimeValueBroker {
 			}
 		}
 		
-		public boolean setValue(String predicate, Value value, Instant instant){
+		public boolean setValues(String predicate, Value[] value, Instant instant){
 			LeafProxy leaf = this.proxies.get(predicate);
 			if(leaf != null){
-				leaf.setCurrentValue(value, instant);
+				leaf.setCurrentValues(value, instant);
 				updatedProxies.add(this);
 				return true;
 			}
@@ -498,27 +542,24 @@ public class RealtimeValueBroker {
 			}
 		}
 		
+		/*
 		public Node getCurrentValue(String predicate) {
 			LeafProxy proxy = this.proxies.get(predicate);
 			if(proxy != null){
 				return proxy.getCurrentValue();
 			}
 			else {
-				return NodeFactory.createURI(FOS_PROXY_UNDEFINED);
+				return NULL;
 			}
 		}
+		*/
 		
 		public Map<String,LeafProxy> getLeaves(){
 			return this.proxies;
 		}
 		
-		public List<Pair<String,Node>> getPropertyValuePairs(){
-			List<Pair<String,Node>>  ret = new ArrayList<>();
-			ret.add(new Pair<String,Node>(FOS_PROXY_ID, this.id));
-			for(Pair<String,LeafProxy> e : this.propertyNames){
-				ret.add(new Pair<String,Node>(e.getKey(), e.getValue().getCurrentValue()));
-			}
-			return ret;
+		public List<Pair<String,LeafProxy>> getPropertyValuePairs(){
+			return this.propertyNames;
 		}
 	}
 }

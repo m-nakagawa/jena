@@ -110,6 +110,7 @@ public class MyService extends WebSocketServlet
 */
 	@Override
 	public void configure(WebSocketServletFactory factory) {
+		factory.getPolicy().setIdleTimeout(0);
 		//factory.getPolicy().setIdleTimeout(10000); // 10sec
 		//factory.register(MyWebSocket.class);
         // set a custom WebSocket creator
@@ -162,36 +163,22 @@ public class MyService extends WebSocketServlet
 
     
     private void writeOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets, Map<String,String[]> parms){
-    	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value>> values = new ArrayList<>(); 
+    	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]>> values = new ArrayList<>(); 
     	for(Entry<String,String[]> e: parms.entrySet()){
     		String key = e.getKey();
+    		key = RealtimeValueBroker.FOS_NAME_BASE+key;
+
     		if(RealtimeValueUtil.isEscapeParm(key)){
     			//制御パラメータ
     			continue;
     		}
-
-    		String[] vs = e.getValue();
-    		String valueStr;
-    		if(vs.length == 1){
-    			//正しいパラメータ
-        		valueStr = e.getValue()[0];
-        		key = RealtimeValueBroker.FOS_NAME_BASE+key;
+    		String[] strs = e.getValue();
+    		RealtimeValueBroker.Value[] v = new RealtimeValueBroker.Value[strs.length]; 
+    		for(int i = 0; i < strs.length; ++i){
+    			System.err.println("xxxx "+key+"  "+strs[i]);
+        		v[i] = RealtimeValueUtil.str2value(strs[i]);
     		}
-    		/*
-    		else if(vs.length == 0){
-    			//値名省略パラメータ
-    			valueStr = key;
-    			key = RealtimeValueBroker.FOS_DEFAULT_VALUE_TAG;
-    		}
-    		*/
-    		else {
-        		Fuseki.serverLog.error("Duplicate param:"+key);
-        		continue;
-    		}
-    		
-    		System.err.println("xxxx "+key+"  "+valueStr);
-    		RealtimeValueBroker.Value value = RealtimeValueUtil.str2value(valueStr);
-			values.add(new RealtimeValueBroker.Pair<>(key, value));
+			values.add(new RealtimeValueBroker.Pair<>(key, v));
     	}
     	
     	RealtimeValueBroker.UpdateContext context = null;
@@ -201,8 +188,8 @@ public class MyService extends WebSocketServlet
     			//TODO pがnullでないように
     			if(p != null){
     				System.err.println("---"+p.getURI());
-    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value> e: values){
-    					p.setValue(e.getKey(), e.getValue(), context.getInstant());
+    				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]> e: values){
+    					p.setValues(e.getKey(), e.getValue(), context.getInstant());
     				}
     			}
     		}

@@ -326,17 +326,21 @@ public class RealtimeValueUtil {
 			return s;
 		}
 	}
-	
-	public static String getRealtimeValue(RealtimeValueBroker.HubProxy proxy){
-		List<RealtimeValueBroker.Pair<String,Node>> values = proxy.getPropertyValuePairs();
-		StringBuilder ret = new StringBuilder();
-		ret.append('{');
-		for(int i = 0;;){
-			RealtimeValueBroker.Pair<String,Node> p = values.get(i);
-			ret.append('"');
-			ret.append(p.getKey());
-			ret.append("\":");
-			Node n = p.getValue();
+
+	private static void expandValues(StringBuilder ret, RealtimeValueBroker.LeafProxy proxy){
+		if(proxy.isArray()){
+			ret.append('[');
+		}
+		boolean first = true;
+		Node nodes[] = proxy.getCurrentValue();
+		for(Node n : nodes){
+			if(first){
+				first = false;
+			}
+			else {
+				ret.append(',');
+			}
+			
 			if(n.isLiteral()){
 				Object o = n.getLiteralValue();
 				if(o instanceof Number){
@@ -353,7 +357,26 @@ public class RealtimeValueUtil {
 				ret.append(n.toString());
 				ret.append('"');
 			}
-			//ret.append(p.getValue());
+		}
+		if(proxy.isArray()){
+			ret.append(']');
+		}
+	}
+	
+	public static String getRealtimeValue(RealtimeValueBroker.HubProxy proxy){
+		List<RealtimeValueBroker.Pair<String,RealtimeValueBroker.LeafProxy>> values = proxy.getPropertyValuePairs();
+		StringBuilder ret = new StringBuilder();
+		ret.append('{');
+		ret.append("\""+RealtimeValueBroker.FOS_PROXY_ID+"\":\"");
+		ret.append(escape(proxy.getIdStr()));
+		ret.append("\",");
+
+		for(int i = 0;;){
+			RealtimeValueBroker.Pair<String,RealtimeValueBroker.LeafProxy> p = values.get(i);
+			ret.append('"');
+			ret.append(p.getKey());
+			ret.append("\":");
+			expandValues(ret, p.getValue());
 			if(++i == values.size()){
 				break;
 			}

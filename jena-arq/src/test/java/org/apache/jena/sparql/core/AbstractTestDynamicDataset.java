@@ -18,6 +18,8 @@
 
 package org.apache.jena.sparql.core;
 
+import java.util.List;
+
 import org.apache.jena.atlas.junit.BaseTest ;
 import org.apache.jena.graph.Triple ;
 import org.apache.jena.query.* ;
@@ -336,7 +338,12 @@ public abstract class AbstractTestDynamicDataset extends BaseTest
         Query query = QueryFactory.create(queryString) ;
         QueryExecution qExec = QueryExecutionFactory.create(query, ds) ;
         ResultSet rs = qExec.execSelect() ;
-        int n = ResultSetFormatter.consume(rs) ;
-        assertEquals(expected, n) ;
+        //assertEquals(expected, n) ;
+        //int n = ResultSetFormatter.consume(rs) ;
+        List<QuerySolution> list = ResultSetFormatter.toList(rs) ; //MNakagawa
+        if(expected != list.size()){
+        	System.err.println(list.size());
+        }
+        assertEquals(expected, list.size());
     }
 }
