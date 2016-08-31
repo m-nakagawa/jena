@@ -39,7 +39,9 @@ import javax.servlet.http.HttpServletResponse ;
 import org.apache.jena.atlas.io.IndentedLineBuffer;
 import org.apache.jena.atlas.lib.DateTimeUtils ;
 import org.apache.jena.atlas.lib.Lib;
+import org.apache.jena.fosext.FosNames;
 import org.apache.jena.fosext.RealtimeValueBroker;
+import org.apache.jena.fosext.TimeSeries;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.fuseki.server.DataAccessPointRegistry;
@@ -139,7 +141,9 @@ public class MyService extends WebSocketServlet
     	}
     }
 
-    private void readOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets){
+    private void readOp(HttpServletResponse resp, RealtimeValueUtil.TargetOperation targetOperation){
+    	RealtimeValueBroker.HubProxy[] targets = targetOperation.getTargetArray();
+    	int history = targetOperation.getHistory();
     	try{
     		PrintWriter writer = resp.getWriter();
     		writer.println("[");
@@ -148,9 +152,31 @@ public class MyService extends WebSocketServlet
     			//TODO pがnullを含まないように
     			if(p != null){
     				if(prev){
-    					writer.print(",\n");
+    					writer.println(",");
     				}
-    				writer.print(RealtimeValueUtil.getRealtimeValue(p));
+    				if(history < 0){
+    					writer.print(p.toString());
+    				}
+    				else {
+    					writer.print("["+p.getIdInJSON()+",");
+    					writer.println("[");
+    					TimeSeries ts = p.getTimeSeries();
+    					Iterator<String> i = ts.getHistory(history).iterator();
+    					if(i.hasNext()){
+    						for(;;){
+    							writer.print(i.next());
+    							if(i.hasNext()){
+    								writer.print(','); //引数が文字型のとき、lnが効かないバグ？？？
+    								writer.println();
+    							}
+    							else {
+    								writer.println();
+    								break;
+    							}
+    						}
+    					}
+    					writer.print("]]");
+    				}
     				prev = true;
     			}
     		}
@@ -162,11 +188,12 @@ public class MyService extends WebSocketServlet
     
 
     
-    private void writeOp(HttpServletResponse resp, RealtimeValueBroker.HubProxy[] targets, Map<String,String[]> parms){
+    private void writeOp(HttpServletResponse resp, RealtimeValueUtil.TargetOperation targetOperation, Map<String,String[]> parms){
+    	RealtimeValueBroker.HubProxy[] targets = targetOperation.getTargetArray();
     	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]>> values = new ArrayList<>(); 
     	for(Entry<String,String[]> e: parms.entrySet()){
     		String key = e.getKey();
-    		key = RealtimeValueBroker.FOS_NAME_BASE+key;
+    		key = FosNames.FOS_NAME_BASE+key;
 
     		if(RealtimeValueUtil.isEscapeParm(key)){
     			//制御パラメータ
@@ -221,10 +248,10 @@ public class MyService extends WebSocketServlet
     	}
     	
     	if(targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
-    		readOp(resp,targetOperation.getTargets());
+    		readOp(resp,targetOperation);
     	}
     	else {
-    		writeOp(resp,targetOperation.getTargets(), parms);
+    		writeOp(resp,targetOperation, parms);
     	}
     }
     

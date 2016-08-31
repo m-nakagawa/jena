@@ -22,6 +22,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.DataFormatException;
 
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -49,26 +51,9 @@ import org.slf4j.Logger;
 public class RealtimeValueBroker {
     private final static Logger log = getLogger(RealtimeValueBroker.class);
 
-    public static final String FOS_NAME_BASE = "http://bizar.aitc.jp/ns/fos/0.1/";
-	public static final String FOS_LOCAL_NAME_BASE = FOS_NAME_BASE+"local/";
-	public static final String FOS_TAG_BASE = FOS_LOCAL_NAME_BASE+"label#";
-	public static final String FOS_PROXY_BASE = FOS_LOCAL_NAME_BASE+"proxy/";
-	//public static final String FOS_PROXY_EMPTY = FOS_PROXY_BASE+"empty";
-	public static final String FOS_PROXY_UNDEFINED = FOS_PROXY_BASE+"undefined";
-	public static final String FOS_PROXY_HOLDER = FOS_PROXY_BASE+"hub#";
-	private static final String LEAF_ID = "leaf";
-	private static final String ARRAY_ID = "array";
-	public static final String FOS_PROXY_LEAF = FOS_PROXY_BASE+LEAF_ID+"#";
-	public static final String FOS_PROXY_ARRAY = FOS_PROXY_BASE+ARRAY_ID+"#";
-	public static final String FOS_PROXY_INSTANT_SHORT = "時刻";
-	public static final String FOS_PROXY_DATETIME_SHORT = "日時";
-	public static final String FOS_PROXY_INSTANT = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT;
-	public static final String FOS_PROXY_DATETIME = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT;
-	//public static final String FOS_DEFAULT_VALUE_TAG = "値";
-	public static final String FOS_PROXY_ID = "id"; //Leafノードのidを返すときの値のラベル
-	private static final Pattern fosProxyHolder = Pattern.compile(FOS_PROXY_HOLDER+"(.+)$"); 
+	private static final Pattern fosProxyHolder = Pattern.compile(FosNames.FOS_PROXY_HUB+"(.+)$"); 
 	//private static final Pattern fosProxyLeaf = Pattern.compile(FOS_PROXY_LEAF+"(.+)$"); 
-	private static final Pattern fosProxyLeafOrArray = Pattern.compile(FOS_PROXY_BASE+"("+LEAF_ID+"|"+ARRAY_ID+")#(.+)$"); 
+	private static final Pattern fosProxyLeafOrArray = Pattern.compile(FosNames.FOS_PROXY_BASE+"("+FosNames.LEAF_ID+"|"+FosNames.ARRAY_ID+")#(.+)$"); 
 	
 	private static Map<String,LeafProxy> leafProxyIndex = new ConcurrentHashMap<>();
 	private static Map<String,HubProxy> rootProxyIndex = new ConcurrentHashMap<>();
@@ -85,20 +70,6 @@ public class RealtimeValueBroker {
 		//System.out.println(literal);
 	}
 	
-	
-	private static final Node[] NULL_VALUE_NODE = new Node[1];
-	static {
-		NULL_VALUE_NODE[0] = NodeFactory.createLiteralByValue("", "", XSDDatatype.XSDstring);
-	}
-	
-	public interface LeafProxy {
-		String getURI();
-		void setCurrentValue(Value value, Instant instant);
-		void setCurrentValues(Value[] values, Instant instant);
-		Instant getUpdateInstant();
-		Node[] getCurrentValue();
-		boolean isArray();
-	}
 	
 
 	public static class TestProxy implements LeafProxy {
@@ -220,7 +191,7 @@ public class RealtimeValueBroker {
 				if(o instanceof Node_URI){
 					Matcher mValue = fosProxyLeafOrArray.matcher(o.toString());
 					if(mValue.matches()){
-						boolean array = mValue.group(1).equals(ARRAY_ID);
+						boolean array = mValue.group(1).equals(FosNames.ARRAY_ID);
 						// 登録 
 						HubProxy root = getRootProxy(s.toString());
 						if(root == null){
@@ -305,61 +276,6 @@ public class RealtimeValueBroker {
 		return rootProxyIndex.get(name);
 	}
 
-	static class ValueContainer implements LeafProxy {
-		private final String uri;
-		private final boolean array;
-		private Node[] value;
-		private Instant instant; // 通常はHUBの方の時刻を使う。これは将来の拡張用
-		
-		private ValueContainer(String uri, boolean array){
-			this.uri = uri;
-			this.array = array;
-			if(this.array){
-				this.value = new Node[0];
-			}
-			else {
-				this.value = NULL_VALUE_NODE;
-			}
-			this.instant = null;
-			addLeafProxy(this);
-		}
-		
-		@Override
-		public String getURI(){
-			return this.uri;
-		}
-
-		@Override
-		public void setCurrentValue(Value value, Instant instant){
-			this.instant = instant;
-			this.value = new Node[1];
-			this.value[0] = NodeFactory.createLiteralByValue(value.getValue(), value.getLang(), value.getDtype()); 
-		}
-		
-		@Override
-		public void setCurrentValues(Value[] values, Instant instant){
-			this.instant = instant;
-			this.value = new Node[values.length];
-			for(int i = 0; i < values.length; ++i){
-				this.value[i] = NodeFactory.createLiteralByValue(values[i].getValue(), values[i].getLang(), values[i].getDtype());
-			}
-		}
-		
-		@Override
-		public Instant getUpdateInstant(){
-			return this.instant;
-		}
-		
-		@Override
-		public Node[] getCurrentValue(){
-			return this.value;
-		}
-		
-		@Override
-		public boolean isArray(){
-			return this.array;
-		}
-	}
 	
 	public interface ValueConsumer {
 		boolean informValueUpdate(HubProxy proxy); // return false: 登録を解除する
@@ -393,6 +309,10 @@ public class RealtimeValueBroker {
 		private LeafProxy datetime; // 日時
 		private LeafProxy instant; // 時刻
 		private List<Pair<String,LeafProxy>> propertyNames;
+		private TimeSeries timeSeries;
+
+		private String formattedValue=null;
+		private String jsonValue=null;
 
 		public HubProxy(String uri){
 			this.uri = uri;
@@ -408,6 +328,14 @@ public class RealtimeValueBroker {
 			else {
 				this.idStr = uri;
 			}
+
+			try {
+				this.timeSeries = new TimeSeries(uri);
+			} catch(DataFormatException e){
+				log.error("Can't register time series storage:"+e.toString());
+				this.timeSeries = null;
+			}
+			
 			//this.id = NodeFactory.createLiteral(idStr, "", XSDDatatype.XSDstring);
 		}
 
@@ -431,6 +359,10 @@ public class RealtimeValueBroker {
 			Map<String,List<LeafProxy>> map = new HashMap<>();
 			Map<LeafProxy,String> reverse = new HashMap<>();
 			for(Entry<String,LeafProxy> e : this.proxies.entrySet()){
+				if(e.getValue() == this.instant){
+					// 時刻だけ特別扱い
+					continue;
+				}
 				reverse.put(e.getValue(), e.getKey());
 				String predicate = e.getKey();
 				Matcher m = RealtimeValueBroker.URI_SPLITTER.matcher(predicate);
@@ -467,10 +399,10 @@ public class RealtimeValueBroker {
 		
 		public void addLeaf(String predicate, LeafProxy leaf){
 			String leafUri = leaf.getURI();
-			if(predicate.equals(FOS_PROXY_DATETIME)){
+			if(predicate.equals(FosNames.FOS_PROXY_DATETIME)){
 				this.datetime = leaf;
 			}
-			if(predicate.equals(FOS_PROXY_INSTANT)){
+			if(predicate.equals(FosNames.FOS_PROXY_INSTANT)){
 				this.instant = leaf;
 			}
 			
@@ -492,6 +424,10 @@ public class RealtimeValueBroker {
 				this.instant.setCurrentValue(new Value(new Long(instant.toEpochMilli()), XSDDatatype.XSDunsignedLong), instant);
 			}
 
+			// ログをとる
+			this.format();
+			this.timeSeries.write(this.formattedValue);
+			
 			// 監視している人に知らせる
 			List<ValueConsumer> removed = null;
 			for(ValueConsumer c: this.consumers){
@@ -510,6 +446,139 @@ public class RealtimeValueBroker {
 					this.removeConsumer(c);
 				}
 			}
+		}
+
+		public TimeSeries getTimeSeries(){
+			return this.timeSeries;
+		}
+		
+		private static final Pattern STRING_ESCAPE = Pattern.compile("([\"\\\\])");
+		private static final String  STRING_ESCAPE_REPLACE = "\\\\$0"; 
+		private static String escape(String s){
+			Matcher m = STRING_ESCAPE.matcher(s);
+			if(m.find()){
+				return m.replaceAll(STRING_ESCAPE_REPLACE);
+			}
+			else {
+				return s;
+			}
+		}
+
+		private static void expandValues(StringBuilder ret, LeafProxy proxy){
+			if(proxy.isArray()){
+				ret.append('[');
+			}
+			boolean first = true;
+			Node nodes[] = proxy.getCurrentValue();
+			for(Node n : nodes){
+				if(first){
+					first = false;
+				}
+				else {
+					ret.append(',');
+				}
+				
+				if(n.isLiteral()){
+					Object o = n.getLiteralValue();
+					if(o instanceof Number){
+						ret.append(o.toString());
+					}
+					else {
+						ret.append('"');
+						ret.append(escape(o.toString()));
+						ret.append('"');
+					}
+				}
+				else {
+					ret.append('"');
+					ret.append(n.toString());
+					ret.append('"');
+				}
+			}
+			if(proxy.isArray()){
+				ret.append(']');
+			}
+		}
+
+		public String getCuurentValueStr(){
+			if(this.formattedValue == null){
+				this.format();
+			}
+			return this.formattedValue;
+		}
+		
+		public String toJSON(){
+			if(this.jsonValue == null){
+				StringBuilder ret = new StringBuilder();
+				ret.append('[');
+				ret.append(this.getIdInJSON());
+				ret.append(',');
+				ret.append(this.getCuurentValueStr());
+				ret.append(']');
+				this.jsonValue = ret.toString();
+			}
+			return this.jsonValue;
+		}
+		
+		public String toString(){
+			return this.toJSON();
+		}
+		
+		/**
+		 * ハブノードのIDをJSONのマップのエントリ文字列として返す。
+		 * "id":"m-sdfdsf"
+		 * @return
+		 */
+		public String getIdInJSON(){
+			StringBuilder ret = new StringBuilder();
+			//ret.append("\""+FosNames.FOS_PROXY_ID+"\":\"");
+			ret.append('"');
+			ret.append(escape(this.getIdStr()));
+			ret.append('"');
+			return ret.toString();
+		}
+		
+		private void format(){
+			this.jsonValue = null;
+			List<RealtimeValueBroker.Pair<String,LeafProxy>> values = this.getPropertyValuePairs();
+			StringBuilder ret = new StringBuilder();
+			ret.append('{');
+			/*
+			ret.append("\""+FosNames.FOS_PROXY_ID+"\":\"");
+			ret.append(escape(this.getIdStr()));
+			ret.append("\",");
+			*/
+			if(this.instant != null){
+				ret.append('"');
+				ret.append(FosNames.FOS_PROXY_INSTANT_SHORT);
+				ret.append("\":");
+				expandValues(ret, this.instant);
+				ret.append(',');
+			}
+			for(int i = 0;;){
+				RealtimeValueBroker.Pair<String,LeafProxy> p = values.get(i);
+				ret.append('"');
+				ret.append(p.getKey());
+				ret.append("\":");
+				expandValues(ret, p.getValue());
+				if(++i == values.size()){
+					break;
+				}
+				ret.append(',');
+			}
+			ret.append('}');
+			/*
+			Map<String,RealtimeValueBroker.LeafProxy> leaves = proxy.getLeaves();
+			RealtimeValueBroker.LeafProxy leaf = leaves.get(ValueTag);
+			if(leaf != null){
+				String msg = String.format("%s\t%s\t%s",
+						proxy.getURI(),
+						ValueTag,
+						leaf.getCurrentValue().getLiteral().getLexicalForm());
+				this.session.getRemote().sendStringByFuture(msg);
+			}
+			*/
+			this.formattedValue = ret.toString();
 		}
 		
 		public void setValue(String predicate, Node node, Instant instant){
@@ -561,5 +630,16 @@ public class RealtimeValueBroker {
 		public List<Pair<String,LeafProxy>> getPropertyValuePairs(){
 			return this.propertyNames;
 		}
+	}
+	
+	public static List<Node> proxy2value(Node node){
+		if(node instanceof Node_URI){
+			LeafProxy proxy = getLeafProxy(node.getURI());
+			if(proxy != null){
+				Node[] ret = proxy.getCurrentValue();
+				return Arrays.asList(ret);
+			}
+		}
+		return null;
 	}
 }

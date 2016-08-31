@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,46 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
+
 package org.apache.jena.fosext;
 
-/**
- * MNakagawa
- * @author m-nakagawa
- * 
- */
-//public class MyTriple extends Triple {
-public class MyTriple {
-	/*
-	public static List<Node> proxy2value(Node node){
-		if(node instanceof Node_URI){
-			RealtimeValueBroker.LeafProxy proxy = RealtimeValueBroker.getLeafProxy(node.getURI());
-			if(proxy != null){
-				Node[] ret = proxy.getCurrentValue();
-				return Arrays.asList(ret);
-			}
-		}
-		return null;
-	}
-	*/
-/*	
-	private static Node proxy2singleValue(Node node){
-		if(node instanceof Node_URI){
-			RealtimeValueBroker.LeafProxy proxy = RealtimeValueBroker.getLeafProxy(node.getURI());
-			if(proxy != null){
-				return proxy.getCurrentValue();
-			}
-		}
-		return node;
-	}
+import java.time.Instant;
 
-	public MyTriple( Node s, Node p, Node o ){
-		super(
-				s,
-				p,
-				proxy2singleValue(o)); //!MNakagawa oだけか？
-	}
-	*/
+import org.apache.jena.fosext.RealtimeValueBroker.Value;
+import org.apache.jena.graph.Node;
+
+/**
+ * @author m-nakagawa
+ *
+ */
+public interface LeafProxy {
+	String getURI();
+	void setCurrentValue(Value value, Instant instant);
+	void setCurrentValues(Value[] values, Instant instant);
+	Instant getUpdateInstant();
+	Node[] getCurrentValue();
+	boolean isArray();
 }

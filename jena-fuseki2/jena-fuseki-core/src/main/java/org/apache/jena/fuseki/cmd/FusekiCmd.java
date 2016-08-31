@@ -109,7 +109,8 @@ public class FusekiCmd {
             jettyServerConfig.jettyConfigFile = null ;
             jettyServerConfig.pages = Fuseki.PagesStatic ;
             jettyServerConfig.enableCompression = true ;
-            jettyServerConfig.verboseLogging = false ;
+            jettyServerConfig.verboseLogging = false ; // MNakagawa
+            //jettyServerConfig.verboseLogging = false ;
         }
 
         private final ServerInitialConfig cmdLineConfig  = new ServerInitialConfig() ;

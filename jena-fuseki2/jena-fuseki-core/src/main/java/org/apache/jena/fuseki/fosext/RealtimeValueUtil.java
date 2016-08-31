@@ -22,6 +22,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -29,8 +30,8 @@ import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
 import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.fosext.FosNames;
 import org.apache.jena.fosext.RealtimeValueBroker;
-import org.apache.jena.graph.Node;
 import org.slf4j.Logger;
 
 /**
@@ -61,9 +62,10 @@ public class RealtimeValueUtil {
 	}
 	
 	private static final String LINK_SPECIFIER =PARM_ESCAPE_PREFIX+"link";
-	private static final String PATH_TAG = RealtimeValueBroker.FOS_NAME_BASE+"パス識別子";
-	private static final String DEFAULT_PROXY_NAMESPACE = RealtimeValueBroker.FOS_TAG_BASE;
-	private static final String DEFAULT_PROPERTY_NAMESPACE = RealtimeValueBroker.FOS_NAME_BASE;
+	private static final String HISTORY_SPECIFIER =PARM_ESCAPE_PREFIX+"history";
+	private static final String PATH_TAG = FosNames.FOS_NAME_BASE+"パス識別子";
+	private static final String DEFAULT_PROXY_NAMESPACE = FosNames.FOS_TAG_BASE;
+	private static final String DEFAULT_PROPERTY_NAMESPACE = FosNames.FOS_NAME_BASE;
 	private static final String LINK_ANY = "*";
 	private static final String LINK_SEPARATOR = "-";
 	private static final Pattern LINK_TAG_PAIR = Pattern.compile("(.+)"+LINK_SEPARATOR+"(.+)");
@@ -115,7 +117,7 @@ public class RealtimeValueUtil {
 		
 		if(parms.get(LINK_SPECIFIER) != null){
 			defaultLink = parms.get(LINK_SPECIFIER).get(0);
-			System.err.println("link:"+defaultLink);
+			log.debug("link:"+defaultLink);
 			if(defaultLink.equals(LINK_ANY)){
 				defaultLink = null;
 			}
@@ -165,7 +167,7 @@ public class RealtimeValueUtil {
 		queryString.append(String.format(QUERY_TAIL, pathLength==0?0:pathLength-1, propertyNamespace+pParts[part]));
 
 		// クエリを実行する
-		System.err.println(queryString.toString());
+		System.err.println("+++\n"+queryString.toString());
 		List<Map<String,String>> result = SparqlAccess.execute(datasetName, queryString.toString());
 		if(result.size() == 0){
 			throw new DataFormatException("No path found");
@@ -186,7 +188,7 @@ public class RealtimeValueUtil {
 	}
 	
 	public static RealtimeValueBroker.HubProxy findProxyById(String label) throws DataFormatException {
-		String id = RealtimeValueBroker.FOS_PROXY_HOLDER+label;
+		String id = FosNames.FOS_PROXY_HUB+label;
 		RealtimeValueBroker.HubProxy proxy = RealtimeValueBroker.getRootProxy(id);
 		if(proxy == null){
 			throw new DataFormatException(String.format("Unknown id:%s", id));
@@ -206,7 +208,7 @@ public class RealtimeValueUtil {
 		String query = queryArray.get(0);
 		
 		// クエリを実行する
-		System.err.println(query);
+		System.err.println("+++++\n"+query);
 		List<Map<String,String>> result = SparqlAccess.execute(datasetName, query);
 		if(result.size() == 0){
 			throw new DataFormatException("No path found");
@@ -257,19 +259,40 @@ public class RealtimeValueUtil {
 
 	public static class TargetOperation {
 		private Operation operation;
-		private RealtimeValueBroker.HubProxy[] targets;
+		private int history = -1; // 負なら指定なし
+		private Map<String,RealtimeValueBroker.HubProxy> targets;
+		private RealtimeValueBroker.HubProxy[] targetArray;
 
 		public Operation getOperation() {
 			return operation;
 		}
+		
 		public void setOperation(Operation operation) {
 			this.operation = operation;
 		}
-		public RealtimeValueBroker.HubProxy[] getTargets() {
+		
+		public Map<String,RealtimeValueBroker.HubProxy> getTargets() {
 			return targets;
 		}
-		public void setTargets(RealtimeValueBroker.HubProxy[] targets) {
-			this.targets = targets;
+		
+		public RealtimeValueBroker.HubProxy[] getTargetArray(){
+			return this.targetArray;
+		}
+		
+		public RealtimeValueBroker.HubProxy getTargetById(String id){
+			return this.targets.get(id);
+		}
+		
+		public void setTargets(RealtimeValueBroker.HubProxy[] proxies) {
+			this.targetArray = proxies;
+			this.targets = new HashMap<>();
+			for(RealtimeValueBroker.HubProxy p: proxies){
+				this.targets.put(p.getIdStr(), p);
+			}
+		}
+		
+		public int getHistory(){
+			return this.history;
 		}
 	}
 	
@@ -289,6 +312,11 @@ public class RealtimeValueUtil {
 		}
 		catch (UnsupportedEncodingException e ){
 			throw new DataFormatException("Illegal path format:"+path);
+		}
+
+		List<String> historyParm = parms.get(HISTORY_SPECIFIER); 
+		if(historyParm != null){
+			ret.history = Integer.valueOf(historyParm.get(0));
 		}
 		
 		// /fos/<dataset>/(update|read)/(path|id|query)/....
@@ -315,88 +343,6 @@ public class RealtimeValueUtil {
 		return ret;
 	}
 
-	private static final Pattern STRING_ESCAPE = Pattern.compile("([\"\\\\])");
-	private static final String  STRING_ESCAPE_REPLACE = "\\\\$0"; 
-	private static String escape(String s){
-		Matcher m = STRING_ESCAPE.matcher(s);
-		if(m.find()){
-			return m.replaceAll(STRING_ESCAPE_REPLACE);
-		}
-		else {
-			return s;
-		}
-	}
-
-	private static void expandValues(StringBuilder ret, RealtimeValueBroker.LeafProxy proxy){
-		if(proxy.isArray()){
-			ret.append('[');
-		}
-		boolean first = true;
-		Node nodes[] = proxy.getCurrentValue();
-		for(Node n : nodes){
-			if(first){
-				first = false;
-			}
-			else {
-				ret.append(',');
-			}
-			
-			if(n.isLiteral()){
-				Object o = n.getLiteralValue();
-				if(o instanceof Number){
-					ret.append(o.toString());
-				}
-				else {
-					ret.append('"');
-					ret.append(escape(o.toString()));
-					ret.append('"');
-				}
-			}
-			else {
-				ret.append('"');
-				ret.append(n.toString());
-				ret.append('"');
-			}
-		}
-		if(proxy.isArray()){
-			ret.append(']');
-		}
-	}
-	
-	public static String getRealtimeValue(RealtimeValueBroker.HubProxy proxy){
-		List<RealtimeValueBroker.Pair<String,RealtimeValueBroker.LeafProxy>> values = proxy.getPropertyValuePairs();
-		StringBuilder ret = new StringBuilder();
-		ret.append('{');
-		ret.append("\""+RealtimeValueBroker.FOS_PROXY_ID+"\":\"");
-		ret.append(escape(proxy.getIdStr()));
-		ret.append("\",");
-
-		for(int i = 0;;){
-			RealtimeValueBroker.Pair<String,RealtimeValueBroker.LeafProxy> p = values.get(i);
-			ret.append('"');
-			ret.append(p.getKey());
-			ret.append("\":");
-			expandValues(ret, p.getValue());
-			if(++i == values.size()){
-				break;
-			}
-			ret.append(',');
-		}
-		ret.append('}');
-		/*
-		Map<String,RealtimeValueBroker.LeafProxy> leaves = proxy.getLeaves();
-		RealtimeValueBroker.LeafProxy leaf = leaves.get(ValueTag);
-		if(leaf != null){
-			String msg = String.format("%s\t%s\t%s",
-					proxy.getURI(),
-					ValueTag,
-					leaf.getCurrentValue().getLiteral().getLexicalForm());
-			this.session.getRemote().sendStringByFuture(msg);
-		}
-		*/
-		return ret.toString();
-	}
-	
     private final static Pattern INT_PAT = Pattern.compile("[\\-+]?\\d+");
     private final static Pattern FLOAT_PAT = Pattern.compile("[\\-+]?\\d+\\.\\d*");//ちゃんとつくってない
     private final static String FLOAT_PAT_EXCEPT = ".";

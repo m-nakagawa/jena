@@ -30,7 +30,7 @@ import org.apache.jena.atlas.lib.persistent.PersistentSet;
 import org.apache.jena.atlas.lib.tuple.TConsumer3;
 import org.apache.jena.atlas.lib.tuple.TFunction3;
 import org.apache.jena.atlas.lib.tuple.TupleMap;
-import org.apache.jena.fosext.MyTriple;
+import org.apache.jena.fosext.RealtimeValueBroker;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.core.mem.FourTupleMap.ThreeTupleMap;
@@ -108,7 +108,7 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
         //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
     	Triple t = apply(reverse, x1, x2, x3, Triple::new);
-    	List<Node> nodes = MyTriple.proxy2value(t.getObject());
+    	List<Node> nodes = RealtimeValueBroker.proxy2value(t.getObject());
     	if(nodes != null){
     		List<Triple> ret = new ArrayList<>();
     		for(Node n : nodes){

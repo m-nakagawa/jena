@@ -30,6 +30,7 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.fosext.FosNames;
 import org.apache.jena.fosext.RealtimeValueBroker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -81,7 +82,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		this.targetOperation = RealtimeValueUtil.findTargets(path, (index)->parms.get(index)); 
 
 		if(this.targetOperation.getTargets() != null){
-			for(RealtimeValueBroker.HubProxy proxy : this.targetOperation.getTargets()){
+			for(RealtimeValueBroker.HubProxy proxy : this.targetOperation.getTargetArray()){
 				//TODO こたえにnullを含まないようにする
 				if(proxy != null){
 					proxy.addConsumer(this);
@@ -91,7 +92,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	}
 
 	private void informAll(){
-		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargets()){
+		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargetArray()){
 			//TODO proxy != nullであるようにする
 			if(p != null){
 				this.informValueUpdate(p);
@@ -104,7 +105,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	public boolean informValueUpdate(RealtimeValueBroker.HubProxy proxy){
 		if(this.alive && this.session != null){
 			System.err.println("Inform:"+proxy.getURI());
-			this.session.getRemote().sendStringByFuture(RealtimeValueUtil.getRealtimeValue(proxy));
+			this.session.getRemote().sendStringByFuture(proxy.toJSON());
 			return true;
 		}
 		else {
@@ -132,13 +133,32 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		*/
 	}
 
+
 	@OnWebSocketMessage
 	public void onText(String message) {
+		JsonObject msg = JSON.parse("{ \"value\":"+message+"}");
+
 		System.out.println("onMessage: " + message);
-		JsonObject j = JSON.parse(message);
+		JsonValue j = msg.get("value"); 
+		if(j.isArray()){
+			j.getAsArray().forEach(v->{
+				RealtimeValueBroker.HubProxy[] proxy = new RealtimeValueBroker.HubProxy[1];
+				JsonArray a = v.getAsArray();
+				proxy[0] = this.targetOperation.getTargetById(a.get(0).getAsString().value());
+				if(proxy[0] != null){
+					setAll(a.get(1), proxy);
+				}
+			});
+		}
+		else {
+			setAll(j, this.targetOperation.getTargetArray());
+		}
+	}
+	
+	private void setAll(JsonValue j, RealtimeValueBroker.HubProxy[] targets){
     	List<RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]>> values = new ArrayList<>(); 
-		for(Entry<String,JsonValue> e: j.entrySet()){
-			String key = RealtimeValueBroker.FOS_NAME_BASE+e.getKey();
+		for(Entry<String,JsonValue> e: j.getAsObject().entrySet()){
+			String key = FosNames.FOS_NAME_BASE+e.getKey();
 			JsonValue v = e.getValue();
 			RealtimeValueBroker.Value[] value;
 			if(v.isArray()){
@@ -146,13 +166,24 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 				JsonArray varray = v.getAsArray();
 				value = new RealtimeValueBroker.Value[varray.size()];
 				for(int i = 0; i < varray.size(); ++i){
-					value[i] = RealtimeValueUtil.str2value(varray.get(i).toString());
+					JsonValue vv = varray.get(i);
+					if(vv.isString()){
+						value[i] = RealtimeValueUtil.str2value(vv.getAsString().value());
+					}
+					else {
+						value[i] = RealtimeValueUtil.str2value(vv.toString());
+					}
 				}
 			}
 			else {
 				System.err.println("++++ "+key+"  "+v.toString());
 				value = new RealtimeValueBroker.Value[1];
-				value[0] = RealtimeValueUtil.str2value(v.toString());
+				if(v.isString()){
+					value[0] = RealtimeValueUtil.str2value(v.getAsString().value());
+				}
+				else {
+					value[0] = RealtimeValueUtil.str2value(v.toString());
+				}
 			}
 			values.add(new RealtimeValueBroker.Pair<>(key, value));
     	}
@@ -160,7 +191,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
     	RealtimeValueBroker.UpdateContext context = null;
     	try {
     		context = RealtimeValueBroker.prepareUpdate();
-    		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargets()){
+    		for(RealtimeValueBroker.HubProxy p: targets){
     			//TODO p != nullであるようにする
     			if(p != null){
     				System.err.println("---"+p.getURI());
