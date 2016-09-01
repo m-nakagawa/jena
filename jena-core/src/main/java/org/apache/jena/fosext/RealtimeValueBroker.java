@@ -161,7 +161,7 @@ public class RealtimeValueBroker {
 	}
 	
 	public static UpdateContext prepareUpdate(){
-		System.err.println("PREPARE UPDATE--------");
+		//System.err.println("PREPARE UPDATE--------");
 
 		updateTime = Instant.now();
 
@@ -179,7 +179,7 @@ public class RealtimeValueBroker {
 			proxy.update(updateTime);
 		}
 		context.lock.unlock();
-		System.err.println("FINISH UPDATE--------");
+		//System.err.println("FINISH UPDATE--------");
 	}
 	
 	// return true: Proxyがデータを消費した false:新規登録した

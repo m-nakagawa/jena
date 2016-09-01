@@ -32,6 +32,8 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.fosext.FosNames;
 import org.apache.jena.fosext.RealtimeValueBroker;
+import org.apache.jena.fosext.TimeSeries;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -91,6 +93,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		}
 	}
 
+	/*
 	private void informAll(){
 		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargetArray()){
 			//TODO proxy != nullであるようにする
@@ -99,12 +102,28 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 			}
 		}
 	}
+	*/
 	
-
+	private void informHistory(RealtimeValueBroker.HubProxy p, int limit){
+		TimeSeries ts = p.getTimeSeries();
+		final RemoteEndpoint peer = this.session.getRemote();
+		final String pre = "[\""+p.getIdStr()+"\",";
+		final String post = "]";
+		ts.getHistory(limit).forEach(h->{
+			peer.sendStringByFuture(pre+h+post);
+		});
+	}
+	
+	private void informHistory(int limit){
+		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargetArray()){
+			informHistory(p, limit);
+		}
+	}
+	
 	@Override
 	public boolean informValueUpdate(RealtimeValueBroker.HubProxy proxy){
 		if(this.alive && this.session != null){
-			System.err.println("Inform:"+proxy.getURI());
+			//System.err.println("Inform:"+proxy.getURI());
 			this.session.getRemote().sendStringByFuture(proxy.toJSON());
 			return true;
 		}
@@ -117,11 +136,16 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	public void onConnect(Session session) {
 		this.session = session;
 		log.debug("Connect");
-		System.out.println("Connect");
+		System.err.println("Connect");
 		
-		if(this.targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
+		if(this.targetOperation.getHistory() >= 0){
+			this.informHistory(this.targetOperation.getHistory());
+		}
+		/*
+		else if(this.targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
 			this.informAll();
 		}
+		*/
 		//session.getRemote().sendStringByFuture("HELLO");
 		/*
 		try {
@@ -138,7 +162,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	public void onText(String message) {
 		JsonObject msg = JSON.parse("{ \"value\":"+message+"}");
 
-		System.out.println("onMessage: " + message);
+		//System.err.println("onMessage: " + message);
 		JsonValue j = msg.get("value"); 
 		if(j.isArray()){
 			j.getAsArray().forEach(v->{
@@ -162,7 +186,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 			JsonValue v = e.getValue();
 			RealtimeValueBroker.Value[] value;
 			if(v.isArray()){
-				System.err.println("++++a "+key+"  "+v.toString());
+				//System.err.println("++++a "+key+"  "+v.toString());
 				JsonArray varray = v.getAsArray();
 				value = new RealtimeValueBroker.Value[varray.size()];
 				for(int i = 0; i < varray.size(); ++i){
@@ -176,7 +200,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 				}
 			}
 			else {
-				System.err.println("++++ "+key+"  "+v.toString());
+				//System.err.println("++++ "+key+"  "+v.toString());
 				value = new RealtimeValueBroker.Value[1];
 				if(v.isString()){
 					value[0] = RealtimeValueUtil.str2value(v.getAsString().value());
@@ -194,7 +218,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
     		for(RealtimeValueBroker.HubProxy p: targets){
     			//TODO p != nullであるようにする
     			if(p != null){
-    				System.err.println("---"+p.getURI());
+    				//System.err.println("---"+p.getURI());
     				for(RealtimeValueBroker.Pair<String, RealtimeValueBroker.Value[]> e: values){
     					p.setValues(e.getKey(), e.getValue(), context.getInstant());
     				}
@@ -222,7 +246,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	@OnWebSocketClose
 	public void onClose(Session session, int statusCode, String reason){
 		log.debug("Close");
-		System.out.println("Close");
+		System.err.println("Close");
 		this.session = null;
 		this.alive = false;
 	}
