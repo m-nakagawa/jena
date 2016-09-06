@@ -331,6 +331,11 @@ public class RealtimeValueBroker {
 
 			try {
 				this.timeSeries = new TimeSeries(uri);
+				/*
+				timeSeries.getHistory(1).forEach(h->{
+					
+				});
+				*/
 			} catch(DataFormatException e){
 				log.error("Can't register time series storage:"+e.toString());
 				this.timeSeries = null;
@@ -610,7 +615,7 @@ public class RealtimeValueBroker {
 				return false;
 			}
 		}
-		
+
 		/*
 		public Node getCurrentValue(String predicate) {
 			LeafProxy proxy = this.proxies.get(predicate);

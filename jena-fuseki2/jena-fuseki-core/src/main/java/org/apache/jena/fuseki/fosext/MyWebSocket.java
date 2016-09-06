@@ -93,7 +93,6 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		}
 	}
 
-	/*
 	private void informAll(){
 		for(RealtimeValueBroker.HubProxy p: this.targetOperation.getTargetArray()){
 			//TODO proxy != nullであるようにする
@@ -102,7 +101,6 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 			}
 		}
 	}
-	*/
 	
 	private void informHistory(RealtimeValueBroker.HubProxy p, int limit){
 		TimeSeries ts = p.getTimeSeries();
@@ -112,6 +110,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		ts.getHistory(limit).forEach(h->{
 			peer.sendStringByFuture(pre+h+post);
 		});
+		peer.sendStringByFuture("");
 	}
 	
 	private void informHistory(int limit){
@@ -123,7 +122,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 	@Override
 	public boolean informValueUpdate(RealtimeValueBroker.HubProxy proxy){
 		if(this.alive && this.session != null){
-			//System.err.println("Inform:"+proxy.getURI());
+			//System.err.println("Inform:"+proxy.toJSON());
 			this.session.getRemote().sendStringByFuture(proxy.toJSON());
 			return true;
 		}
@@ -141,11 +140,10 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		if(this.targetOperation.getHistory() >= 0){
 			this.informHistory(this.targetOperation.getHistory());
 		}
-		/*
-		else if(this.targetOperation.getOperation() == RealtimeValueUtil.Operation.READ){
+		if(this.targetOperation.getLatest()){
 			this.informAll();
 		}
-		*/
+
 		//session.getRemote().sendStringByFuture("HELLO");
 		/*
 		try {
@@ -160,11 +158,13 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 
 	@OnWebSocketMessage
 	public void onText(String message) {
+		//いきなり配列だとパーズできないので、ハッシュ化
 		JsonObject msg = JSON.parse("{ \"value\":"+message+"}");
 
 		//System.err.println("onMessage: " + message);
 		JsonValue j = msg.get("value"); 
 		if(j.isArray()){
+			// [[node,{values}],[node,{values}]...]
 			j.getAsArray().forEach(v->{
 				RealtimeValueBroker.HubProxy[] proxy = new RealtimeValueBroker.HubProxy[1];
 				JsonArray a = v.getAsArray();
@@ -175,6 +175,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 			});
 		}
 		else {
+			// {values}
 			setAll(j, this.targetOperation.getTargetArray());
 		}
 	}

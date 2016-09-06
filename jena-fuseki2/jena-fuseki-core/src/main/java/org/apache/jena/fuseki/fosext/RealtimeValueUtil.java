@@ -63,6 +63,7 @@ public class RealtimeValueUtil {
 	
 	private static final String LINK_SPECIFIER =PARM_ESCAPE_PREFIX+"link";
 	private static final String HISTORY_SPECIFIER =PARM_ESCAPE_PREFIX+"history";
+	private static final String LATEST_SPECIFIER =PARM_ESCAPE_PREFIX+"latest";
 	private static final String PATH_TAG = FosNames.FOS_NAME_BASE+"パス識別子";
 	private static final String DEFAULT_PROXY_NAMESPACE = FosNames.FOS_TAG_BASE;
 	private static final String DEFAULT_PROPERTY_NAMESPACE = FosNames.FOS_NAME_BASE;
@@ -260,6 +261,7 @@ public class RealtimeValueUtil {
 	public static class TargetOperation {
 		private Operation operation;
 		private int history = -1; // 負なら指定なし
+		private boolean latest = false; // trueなら現在値を返す
 		private Map<String,RealtimeValueBroker.HubProxy> targets;
 		private RealtimeValueBroker.HubProxy[] targetArray;
 
@@ -287,12 +289,18 @@ public class RealtimeValueUtil {
 			this.targetArray = proxies;
 			this.targets = new HashMap<>();
 			for(RealtimeValueBroker.HubProxy p: proxies){
-				this.targets.put(p.getIdStr(), p);
+				if(p != null){
+					this.targets.put(p.getIdStr(), p);
+				}
 			}
 		}
 		
 		public int getHistory(){
 			return this.history;
+		}
+		
+		public boolean getLatest(){
+			return this.latest;
 		}
 	}
 	
@@ -303,52 +311,61 @@ public class RealtimeValueUtil {
 	
 //	public static TargetOperation findTargets(String path, Map<String,List<String>> parms) throws DataFormatException {
 	public static TargetOperation findTargets(String path, GetParm parms) throws DataFormatException {
-		TargetOperation ret = new TargetOperation();
-	
-		//List<String> test = parms.get("test");
-		String epath;
 		try {
-			epath = URLDecoder.decode(path, "UTF-8");
-		}
-		catch (UnsupportedEncodingException e ){
-			throw new DataFormatException("Illegal path format:"+path);
-		}
+			TargetOperation ret = new TargetOperation();
 
-		List<String> historyParm = parms.get(HISTORY_SPECIFIER); 
-		if(historyParm != null){
-			ret.history = Integer.valueOf(historyParm.get(0));
-		}
-		
-		// /fos/<dataset>/(update|read)/(path|id|query)/....
-		String[] pParts = PATH_PATTERN.split(epath);
-		if(pParts.length < 4 ){
-			throw new DataFormatException("Illegal path format:"+epath);
-		}
+			//List<String> test = parms.get("test");
+			String epath;
+			try {
+				epath = URLDecoder.decode(path, "UTF-8");
+			}
+			catch (UnsupportedEncodingException e ){
+				throw new DataFormatException("Illegal path format:"+path);
+			}
 
-		String datasetName = pParts[2];
-		try {
-			ret.setOperation(Operation.valueOf(pParts[3].toUpperCase()));
-		}
-		catch(IllegalArgumentException e){
-			throw new DataFormatException(String.format("Unknown operation:%s:%s", pParts[3], epath));
-		}
+			List<String> historyParm = parms.get(HISTORY_SPECIFIER); 
+			if(historyParm != null){
+				ret.history = Integer.valueOf(historyParm.get(0));
+			}
 
-		try {
-			ret.setTargets(findProxies(datasetName, ret.operation, pParts, 4, parms));
+			List<String> latestParm = parms.get(LATEST_SPECIFIER);
+			if(latestParm != null && Integer.valueOf(latestParm.get(0)) != 0){
+				// 値にかかわらず
+				ret.latest = true;
+			}
+
+			// /fos/<dataset>/(update|read)/(path|id|query)/....
+			String[] pParts = PATH_PATTERN.split(epath);
+			if(pParts.length < 4 ){
+				throw new DataFormatException("Illegal path format:"+epath);
+			}
+
+			String datasetName = pParts[2];
+			try {
+				ret.setOperation(Operation.valueOf(pParts[3].toUpperCase()));
+			}
+			catch(IllegalArgumentException e){
+				throw new DataFormatException(String.format("Unknown operation:%s:%s", pParts[3], epath));
+			}
+
+			try {
+				ret.setTargets(findProxies(datasetName, ret.operation, pParts, 4, parms));
+			}
+			catch(DataFormatException e){
+				throw new DataFormatException(String.format("%s:%s", e.toString(), epath));
+			}
+			return ret;
+		} catch(Exception e){
+			throw new DataFormatException(String.format("Parm error:%s", e.toString()));
 		}
-		catch(DataFormatException e){
-			throw new DataFormatException(String.format("%s:%s", e.toString(), epath));
-		}
-		
-		return ret;
 	}
 
-    private final static Pattern INT_PAT = Pattern.compile("[\\-+]?\\d+");
-    private final static Pattern FLOAT_PAT = Pattern.compile("[\\-+]?\\d+\\.\\d*");//ちゃんとつくってない
-    private final static String FLOAT_PAT_EXCEPT = ".";
+	private final static Pattern INT_PAT = Pattern.compile("[\\-+]?\\d+");
+	private final static Pattern FLOAT_PAT = Pattern.compile("[\\-+]?\\d+\\.\\d*");//ちゃんとつくってない
+	private final static String FLOAT_PAT_EXCEPT = ".";
 
-    public static RealtimeValueBroker.Value str2value(String valueStr){
-    	RealtimeValueBroker.Value ret;
+	public static RealtimeValueBroker.Value str2value(String valueStr){
+		RealtimeValueBroker.Value ret;
 		// TODO 値のパーズちゃんとしていない
 		Matcher im = INT_PAT.matcher(valueStr);
 		if(im.matches()){
