@@ -168,7 +168,7 @@ public class RealtimeValueUtil {
 		queryString.append(String.format(QUERY_TAIL, pathLength==0?0:pathLength-1, propertyNamespace+pParts[part]));
 
 		// クエリを実行する
-		//System.err.println("+++\n"+queryString.toString());
+		System.err.println("+++\n"+queryString.toString());
 		List<Map<String,String>> result = SparqlAccess.execute(datasetName, queryString.toString());
 		if(result.size() == 0){
 			throw new DataFormatException("No path found");

@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.regex.Matcher;
@@ -60,26 +61,53 @@ public class RealtimeValueBroker {
 	private static Set<HubProxy> updatedProxies;
 	private static Instant updateTime;
 	private static ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+	public static final Pattern URI_SPLITTER = Pattern.compile("^(.*[#|/])(.+)$");
 	
+	
+	private static HubProxy getSystemProxy(String name){
+		HubProxy hub = getRootProxy(name);
+		if(hub == null){
+			hub = new HubProxy(name);
+			addRootProxy(hub);
+		}
+		return hub;
+	}
+	
+	private static TestProxy websocketCnt ;
+	private static TestProxy2 sendCnt;
+	private static HubProxy systemHub;
 	static {
-		new TestProxy("http://bizar.aitc.jp/ns/fos/0.1/internal/01");
+		websocketCnt = new TestProxy(FosNames.FOS_SYSTEM_WEBSOCKET_CONNECTION);
+		sendCnt = new TestProxy2(FosNames.FOS_SYSTEM_WEBSOCKET_SEND);
 		// どれもデータ型を推測しない
 		//LiteralLabel literal = LiteralLabelFactory.createLiteralLabel("123", "", (RDFDatatype)null);
 		//LiteralLabel literal = LiteralLabelFactory.create("123", (RDFDatatype)null);
 		//LiteralLabel literal = LiteralLabelFactory.createByValue("123", "", (RDFDatatype)null);
 		//System.out.println(literal);
+		systemHub = getSystemProxy(FosNames.FOS_PROXY_SYSTEM);
+		systemHub.addLeaf(FosNames.FOS_NAME_BASE+FosNames.FOS_WEBSOCKET_PREDICATE, websocketCnt);
+		systemHub.addLeaf(FosNames.FOS_NAME_BASE+FosNames.FOS_SEND_PREDICATE, sendCnt);
+		systemHub.setVolatile();
 	}
 	
+	public static TestProxy getWebsocketCnt(){
+		return websocketCnt;
+	}
 	
+	public static TestProxy2 getSendCnt(){
+		return sendCnt;
+	}
 
+	//TODO デモ用。書き換え
 	public static class TestProxy implements LeafProxy {
 		private final String uri;
-		private int value;
+		private AtomicInteger value;
 		private Instant update;
 		
 		private TestProxy(String uri){
 			this.uri = uri;
-			this.value = 0;
+			this.value = new AtomicInteger(0);
 			addLeafProxy(this);
 		}
 		
@@ -92,23 +120,111 @@ public class RealtimeValueBroker {
 		}
 		
 		public void setCurrentValue(Value value, Instant instant){
-			this.update = instant;
-			if(value.dtype == XSDDatatype.XSDint || value.dtype == XSDDatatype.XSDinteger){
-				//this.value = Integer.valueOf(value.value);
-				this.value = (Integer)value.value;
-			}
-			else {
-				// 無視
-			}
+			assert(false);
 		}
 		
 		public void setCurrentValues(Value[] value, Instant instant){
 		}
 		
+		public int inc(){
+			int ret = this.value.incrementAndGet();
+			systemHub.update(Instant.now()); //TODO 時刻とトランザクションにするか
+			return ret;
+		}
+		
+		public int dec(){
+			int ret = this.value.decrementAndGet();
+			systemHub.update(Instant.now()); //TODO 時刻とトランザクションにするか
+			return ret;
+		}
+		
 		public Node[] getCurrentValue(){
-			++value;
 			Node[] ret = new Node[1];
-			ret[0] = NodeFactory.createLiteral(Integer.toString(value), XSDDatatype.XSDinteger);
+			ret[0] = NodeFactory.createLiteral(Integer.toString(value.get()), XSDDatatype.XSDinteger);
+			return ret;
+		}
+		
+		public boolean isArray(){
+			return false;
+		}
+	}
+
+	//TODO デモ用。書き換え
+	// 送信カウント
+	public static class TestProxy2 implements LeafProxy {
+		private final String uri;
+		private final AtomicInteger value;
+		private long max;
+		//private long current;
+		private Instant update;
+		private Thread th;
+		
+		private TestProxy2(String uri){
+			this.uri = uri;
+			this.value = new AtomicInteger(0);
+			this.max = 0;
+			//this.current = 0;
+			addLeafProxy(this);
+
+			this.th = new Thread(() -> {
+				long prev = value.get();
+				long prevt = Instant.now().toEpochMilli();
+				for(;;){
+					try{
+						Thread.sleep(1000);
+					}catch (InterruptedException e){
+					}
+					int next = value.get();
+					long nextt = Instant.now().toEpochMilli();
+					long intrvl = next - prev;
+					long intrvlt = nextt-prevt;
+					if(intrvlt > 500){
+						intrvl = (intrvl*1000)/intrvlt;
+						//this.current = intrvl;
+						if(this.max < intrvl){
+							max = intrvl;
+							systemHub.update(Instant.now());
+						}
+					}
+					prev = next;
+					prevt = nextt;
+				}
+			});
+			
+			this.th.start();
+		}
+		
+		public String getURI(){
+			return this.uri;
+		}
+		
+		public Instant getUpdateInstant(){
+			return this.update;
+		}
+		
+		public void setCurrentValue(Value value, Instant instant){
+			this.max = 0;
+			systemHub.update(Instant.now());
+		}
+		
+		public void setCurrentValues(Value[] value, Instant instant){
+			this.max = 0;
+			systemHub.update(Instant.now());
+		}
+		
+		public int inc(){
+			int ret = this.value.incrementAndGet();
+			return ret;
+		}
+		
+		public int dec(){
+			int ret = this.value.decrementAndGet();
+			return ret;
+		}
+		
+		public Node[] getCurrentValue(){
+			Node[] ret = new Node[1];
+			ret[0] = NodeFactory.createLiteral(Long.toString(this.max), XSDDatatype.XSDinteger);
 			return ret;
 		}
 		
@@ -258,8 +374,6 @@ public class RealtimeValueBroker {
 		}
 	}
 
-	public static final Pattern URI_SPLITTER = Pattern.compile("^(.*[#|/])(.+)$");
-	
 	static void addLeafProxy(LeafProxy proxy){
 		leafProxyIndex.put(proxy.getURI(), proxy);
 	}
@@ -272,6 +386,7 @@ public class RealtimeValueBroker {
 		rootProxyIndex.put(proxy.getURI(), proxy);
 	}
 	
+	
 	public static HubProxy getRootProxy(String name){
 		return rootProxyIndex.get(name);
 	}
@@ -280,6 +395,7 @@ public class RealtimeValueBroker {
 	public interface ValueConsumer {
 		boolean informValueUpdate(HubProxy proxy); // return false: 登録を解除する
 	}
+	
 	
 	public final static class Pair<K,V> {
 	    private final K key;
@@ -313,6 +429,7 @@ public class RealtimeValueBroker {
 
 		private String formattedValue=null;
 		private String jsonValue=null;
+		private boolean volatileValue = false;
 
 		public HubProxy(String uri){
 			this.uri = uri;
@@ -344,6 +461,10 @@ public class RealtimeValueBroker {
 			//this.id = NodeFactory.createLiteral(idStr, "", XSDDatatype.XSDstring);
 		}
 
+		private void setVolatile(){
+			this.volatileValue = true;
+		}
+		
 		public void addConsumer(ValueConsumer consumer){
 			this.consumers.add(consumer);
 		}
@@ -506,14 +627,14 @@ public class RealtimeValueBroker {
 		}
 
 		public String getCuurentValueStr(){
-			if(this.formattedValue == null){
+			if(this.formattedValue == null || this.volatileValue){
 				this.format();
 			}
 			return this.formattedValue;
 		}
 		
 		public String toJSON(){
-			if(this.jsonValue == null){
+			if(this.jsonValue == null || this.volatileValue){
 				StringBuilder ret = new StringBuilder();
 				ret.append('[');
 				ret.append(this.getIdInJSON());

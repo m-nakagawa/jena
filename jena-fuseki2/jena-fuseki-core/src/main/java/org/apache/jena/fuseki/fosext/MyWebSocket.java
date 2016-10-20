@@ -124,6 +124,7 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		if(this.alive && this.session != null){
 			//System.err.println("Inform:"+proxy.toJSON());
 			this.session.getRemote().sendStringByFuture(proxy.toJSON());
+			RealtimeValueBroker.getSendCnt().inc();
 			return true;
 		}
 		else {
@@ -137,6 +138,8 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		log.debug("Connect");
 		System.err.println("Connect");
 		
+		RealtimeValueBroker.TestProxy wscnt = RealtimeValueBroker.getWebsocketCnt();
+		wscnt.inc();
 		if(this.targetOperation.getHistory() >= 0){
 			this.informHistory(this.targetOperation.getHistory());
 		}
@@ -250,6 +253,9 @@ public class MyWebSocket implements RealtimeValueBroker.ValueConsumer {
 		System.err.println("Close");
 		this.session = null;
 		this.alive = false;
+
+		RealtimeValueBroker.TestProxy wscnt = RealtimeValueBroker.getWebsocketCnt();
+		wscnt.dec();
 	}
 	/*
 	private Session session;
