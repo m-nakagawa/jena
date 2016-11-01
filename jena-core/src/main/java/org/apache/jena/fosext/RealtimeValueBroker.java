@@ -525,13 +525,20 @@ public class RealtimeValueBroker {
 		
 		public void addLeaf(String predicate, LeafProxy leaf){
 			String leafUri = leaf.getURI();
-			if(predicate.equals(FosNames.FOS_PROXY_DATETIME)){
-				this.datetime = leaf;
+			FosNames.FosVocabItem item = FosNames.getVocabItem(predicate);
+			if(item != null){
+				switch(item.getVocab()){
+				case instant:
+					this.instant = leaf;
+					break;
+				case datetime:
+					this.datetime = leaf;
+					break;
+				default:
+					throw new RuntimeException("????");
+				}
 			}
-			if(predicate.equals(FosNames.FOS_PROXY_INSTANT)){
-				this.instant = leaf;
-			}
-			
+
 			if(this.proxies.containsKey(predicate)){
 				// predicateが重複している
 				log.error(String.format("Can't append %s to %s %s", leafUri, this.uri, predicate));
@@ -676,7 +683,7 @@ public class RealtimeValueBroker {
 			*/
 			if(this.instant != null){
 				ret.append('"');
-				ret.append(FosNames.FOS_PROXY_INSTANT_SHORT);
+				ret.append(FosNames.getShortLabel(FosNames.FosVocab.instant));
 				ret.append("\":");
 				expandValues(ret, this.instant);
 				ret.append(',');

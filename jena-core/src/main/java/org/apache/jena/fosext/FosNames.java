@@ -17,11 +17,15 @@
  */
 package org.apache.jena.fosext;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author m-nakagawa
  *
  */
 public class FosNames {
+	// TODO : Multi-language definition should be read from a file? 
     public static final String FOS_NAME_BASE = "http://bizar.aitc.jp/ns/fos/0.1/";
     
 	public static final String FOS_LOCAL_NAME_BASE = FOS_NAME_BASE+"local/";
@@ -37,10 +41,14 @@ public class FosNames {
 	public static final String SYSTEM_ID = "_system";
 	public static final String FOS_PROXY_LEAF = FOS_PROXY_BASE+LEAF_ID+"#";
 	public static final String FOS_PROXY_ARRAY = FOS_PROXY_BASE+ARRAY_ID+"#";
-	public static final String FOS_PROXY_INSTANT_SHORT = "時刻";
-	public static final String FOS_PROXY_DATETIME_SHORT = "日時";
-	public static final String FOS_PROXY_INSTANT = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT;
-	public static final String FOS_PROXY_DATETIME = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT;
+	public static final String FOS_PROXY_INSTANT_SHORT_ja = "時刻";
+	public static final String FOS_PROXY_INSTANT_SHORT_en = "instant";
+	//public static final String FOS_PROXY_INSTANT_ja = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT_ja;
+	//public static final String FOS_PROXY_INSTANT_en = FOS_NAME_BASE+FOS_PROXY_INSTANT_SHORT_en;
+	public static final String FOS_PROXY_DATETIME_SHORT_ja = "日時";
+	public static final String FOS_PROXY_DATETIME_SHORT_en = "datetime";
+	//public static final String FOS_PROXY_DATETIME_ja = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT_ja;
+	//public static final String FOS_PROXY_DATETIME_en = FOS_NAME_BASE+FOS_PROXY_DATETIME_SHORT_en;
 	
 	public static final String FOS_PROXY_SYSTEM = FOS_PROXY_HUB+SYSTEM_ID;
 	
@@ -52,4 +60,125 @@ public class FosNames {
 	public static final String FOS_SEND_PREDICATE = "最大送信数";
 	//public static final String FOS_DEFAULT_VALUE_TAG = "値";
 	public static final String FOS_PROXY_ID = "id"; //Leafノードのidを返すときの値のラベル
-}
+	
+
+	public static enum FosVocab {
+		instant, datetime;
+		
+		private static Map<FosVocab,Map<FosLocale,FosVocabItem>> vocabIndex = new HashMap<>();
+		private static void setIndex(FosVocabItem item){
+			Map<FosLocale,FosVocabItem> vmap = vocabIndex.get(item.vocab);
+			if(vmap == null){
+				vmap = new HashMap<>();
+				FosVocab.vocabIndex.put(item.vocab, vmap);
+			}
+			vmap.put(item.locale, item);
+		}
+		
+		public static Map<FosLocale,FosVocabItem> getLocaleIndex(FosVocab v){
+			return FosVocab.vocabIndex.get(v);
+		}
+	}
+	
+	public static enum FosLocale {
+		ja, en;
+
+		private static Map<FosLocale,Map<FosVocab,FosVocabItem>> localeIndex = new HashMap<>();
+		private static void setIndex(FosVocabItem item){
+			Map<FosVocab,FosVocabItem> lmap = localeIndex.get(item.locale);
+			if(lmap == null){
+				lmap = new HashMap<>();
+				FosLocale.localeIndex.put(item.locale, lmap);
+			}
+			lmap.put(item.vocab, item);
+		}
+		
+		public static Map<FosVocab,FosVocabItem> getVocabIndex(FosVocab v){
+			return FosLocale.localeIndex.get(v);
+		}
+	}
+	
+	public static class FosVocabItem {
+		private final FosVocab vocab;   // 語彙（instant,datetimeなど）のID
+		private final FosLocale locale; // ロケール(ja,enなど）のID
+		private final String shortLabel;// 語彙のロケールにおけるIRIのロケール依存部分
+		private final String iri;       // 語彙のロケールにおけるIRI
+		
+		
+		private FosVocabItem(FosVocab vocab, FosLocale locale, String prefix, String shortLabel){
+			this.vocab = vocab;
+			this.locale = locale;
+			this.shortLabel = shortLabel;
+			this.iri = prefix+shortLabel;
+		}
+		
+		public FosVocab getVocab() {
+			return vocab;
+		}
+		public FosLocale getLocale() {
+			return locale;
+		}
+		public String getIri() {
+			return iri;
+		}
+		public String getShortLabel() {
+			return shortLabel;
+		}
+	};
+	
+	private static Map<String,FosVocabItem> iriIndex = new HashMap<>();
+	
+	private static void setIndex(FosVocabItem item){
+		FosNames.iriIndex.put(item.iri, item);
+		FosLocale.setIndex(item);
+		FosVocab.setIndex(item);
+	}
+	
+	{
+		setIndex(new FosVocabItem(FosVocab.instant, FosLocale.ja, FOS_NAME_BASE, FOS_PROXY_INSTANT_SHORT_ja ));
+		setIndex(new FosVocabItem(FosVocab.instant, FosLocale.en, FOS_NAME_BASE, FOS_PROXY_INSTANT_SHORT_en ));
+		setIndex(new FosVocabItem(FosVocab.datetime, FosLocale.ja, FOS_NAME_BASE, FOS_PROXY_DATETIME_SHORT_ja ));
+		setIndex(new FosVocabItem(FosVocab.datetime, FosLocale.en, FOS_NAME_BASE, FOS_PROXY_DATETIME_SHORT_en ));
+	}
+	
+	
+	private static FosLocale defaultLocale = null;
+	
+	/**
+	 * @param iri
+	 * @return nullなら未定義
+	 */
+	public static FosVocabItem getVocabItem(String iri){
+		FosVocabItem ret = FosNames.iriIndex.get(iri);
+
+		// ロケール未定義状態では、初めて使われたIRIのロケールをデフォルトロケールに設定する。
+		if(FosNames.defaultLocale == null && ret != null){
+			FosNames.defaultLocale = ret.getLocale();
+		}
+		return ret;
+	}
+	
+	public static FosLocale getDefaultLocale(){
+		if(FosNames.defaultLocale == null){
+			// デフォルトロケールが設定されていなければ英語を返す。
+			return FosLocale.en;
+		}
+		else {
+			return FosNames.defaultLocale;
+		}
+	}
+	
+	public static void setDefaultLocale(FosLocale locale){
+		FosNames.defaultLocale = locale;
+	}
+	
+	/**
+	 * 現在のデフォルトロケール
+	 * @param vocab
+	 * @return
+	 */
+	public static String getShortLabel(FosVocab vocab){
+		FosVocabItem item = FosLocale.getVocabIndex(vocab).get(getDefaultLocale());
+		return item.getShortLabel();
+	}
+} 
