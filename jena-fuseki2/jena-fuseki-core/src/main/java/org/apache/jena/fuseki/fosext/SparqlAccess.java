@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import org.apache.jena.atlas.io.IndentedLineBuffer;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.server.DataAccessPoint;
@@ -123,10 +122,12 @@ public class SparqlAccess {
         return null ;
     }
 
+    /*
     private static String formatForLog(Query query) {
         IndentedLineBuffer out = new IndentedLineBuffer() ;
         out.setFlatMode(true) ;
         query.serialize(out) ;
         return out.asString() ;
     }
+    */
 }

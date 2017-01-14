@@ -201,7 +201,12 @@
     <servlet-name>MyServlet</servlet-name>
     <url-pattern>/openmasami/*</url-pattern>
   </servlet-mapping>
-  
+
+  <servlet-mapping><!-- MNakagawa -->
+    <servlet-name>MyServlet</servlet-name>
+    <url-pattern>/fos/*</url-pattern>
+  </servlet-mapping>
+    
   <servlet>
     <servlet-name>ActionDatasets</servlet-name>
     <servlet-class>org.apache.jena.fuseki.mgt.ActionDatasets</servlet-class>

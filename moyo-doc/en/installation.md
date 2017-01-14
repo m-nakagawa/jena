@@ -2,6 +2,12 @@
 
 Here describes installation and sample execution on Windows 10.
 
+## Installation
+
+Moyo is modified Fuseki 2.4.1 and completely compatible without using 
+the name sapce "http://bizar.aitc.jp/ns/fos/". 
+So, you can refer Fuseki manual.
+
 1. Prepare Java 8 runtime envirionment.
 
 1. Download zipped package from [here]().
@@ -14,6 +20,9 @@ Here describes installation and sample execution on Windows 10.
 > cd apache-jena-fuseki-2.4.1-SNAPSHOT
 > fuseki-server
 ```
+
+## Sample execution
+
 1. Open the url 'http://localhost:3030' on a Web browser like Firefox or Chrome.
 
 1. Make dataset 'Sample01'

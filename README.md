@@ -1,37 +1,3 @@
-# Moyo
-
-Moyo is extended Apache JENA Fuseki 2.4.1 for cyber physical applications.
-
-[日本語](#ja)
-
-## Extensions
-
-Moyo can mix changing data of the outer world into RDF graph.
-
-* Realtime data mixing.
-<BR>You can specify 'proxy nodes' as data ports to outer world.
-<BR>Moyo replaces proxy node IRIs to associated
-real world values on a Sparql query variable assignments.
-* WebSocket connections.
- * You can put proxy node values via a WebSocket connection.
- * You can get proxy node value changes via a WebSocket connection.
-
-Some ohter extensions are under construction.
-
-Moyo is compatible with Fuseki unless RDF includes special IRI for Moyo.
-
-## Installation
-
-The installation procedure is same as [Fuseki](https://jena.apache.org/documentation/serving_data/).
-
-Moyo sample data instruction is [here](moyo-doc/en/installation.md).
-
-## Manual
-
-[Manual](moyo-doc/en/manual.md)
-
-----
-<a name="#ja"></a>
 # Moyoについて
 
 MoyoはApache JENA Fusekiへサイバーフィジカルシステム向けの拡張機能を追加したものです。
@@ -87,10 +53,3 @@ Moyoは、数十年以上にわたってサービスを続ける分散システ�
 * [実装意図](moyo-doc/ja/purpose.md)
 * [空間OS](moyo-doc/ja/fieldos.md)
 
-
-このサイトの運用設計がおいついてませんが、こんなのではじめましょうか。
-
-* 一般ユーザはここに参加「勉強会チーム」に参加
-* 全員が自動的に「オフトピック」「タウンスクウェア」チャネルへ参加
- * タウンスクウェア： 公式連絡、教えてくれ、教えてやる。
- * オフトピック： なんでも。愚痴、雄たけびなども可

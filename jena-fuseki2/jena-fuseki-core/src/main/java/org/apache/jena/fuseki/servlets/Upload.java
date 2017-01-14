@@ -143,7 +143,7 @@ public class Upload {
                 StreamRDFCounting countingDest2 =  StreamRDFLib.count(countingDest) ;
                 RealtimeValueBroker.UpdateContext context = null;
                 try {
-                	context = RealtimeValueBroker.prepareUpdate(); // MNakagawa
+                	context = RealtimeValueBroker.prepareUpdate(true); // MNakagawa
                     ActionSPARQL.parse(action, countingDest2, stream, lang, base);
                     UploadDetails details1 = new UploadDetails(countingDest2.count(), countingDest2.countTriples(),countingDest2.countQuads()) ;
                     action.log.info(format("[%d] Filename: %s, Content-Type=%s, Charset=%s => %s : %s", 

@@ -20,7 +20,6 @@ package org.apache.jena.fosext;
 
 import java.time.Instant;
 
-import org.apache.jena.fosext.RealtimeValueBroker.Value;
 import org.apache.jena.graph.Node;
 
 /**
@@ -29,8 +28,8 @@ import org.apache.jena.graph.Node;
  */
 public interface LeafProxy {
 	String getURI();
-	void setCurrentValue(Value value, Instant instant);
-	void setCurrentValues(Value[] values, Instant instant);
+	void setCurrentValue(LeafValue value, Instant instant);
+	void setCurrentValues(LeafValue[] values, Instant instant);
 	Instant getUpdateInstant();
 	Node[] getCurrentValue();
 	boolean isArray();

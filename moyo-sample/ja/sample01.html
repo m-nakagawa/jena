@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<!-- 日本語 -->
+<html>
+  <!-- MNakagawa -->
+  <head>
+    <title>FieldOS Sample01</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  </head>
+  <body>
+  <h1>Moyo : sample01</h1>
+  <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script src="sample01.js" charset="utf-8"></script>
+  <script type="text/javascript">
+    path1 ='ws://localhost:3030/openmasami/sample01/read/path/device/value?-latest=1&-query='
+    query = 'SELECT ?hub WHERE {  ?s0 <http://bizar.aitc.jp/ns/fos/0.1/tag> <http://bizar.aitc.jp/ns/fos/0.1/local/label#device> .  ?s0 <http://bizar.aitc.jp/ns/fos/0.1/local/label#value> ?hub .}';
+    labelns = 'http://bizar.aitc.jp/ns/fos/0.1/local/label#'
+    path1 = (path1 + encodeURIComponent(query)
+	  +"&-propertyns="
+	  +encodeURIComponent(labelns));
+    console.log("Start");
+    connect1(path1);
+  </script>
+  <table>
+  <tr>
+  <td width=80>評価50以上</td><td width=150><div id="cnt-0"></div></td>
+  <td width=80>接続数</td><td width=150><div id="_connect"></div></td>
+  <td width=130>秒間最大送信数</td><td width=150><div id="_maxSend"></div></td>
+  </tr>
+  <tr></tr>
+  <tr><td>　</td></tr>
+  </table>
+  <input id="vote-name"
+   width=100
+   onchange="changeValue2('vote-name',this.value)"
+   oninput="changeValue('vote-name',this.value)"
+  />
+  ←名前を入力してスライダー操作。最後の操作の値を全員へ表示します。
+  <br>
+   <table>
+     <tr>
+      <td width=100><div id="n-vote-0"></div></td>
+      <td><div id="v-vote-0"></div></td>
+      <td><canvas id="c-vote-0" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0" value="0"
+	       onchange="changeValue2('vote-0', this.value)" 
+	       oninput="changeValue('vote-0', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-1"></div></td>
+      <td><div id="v-vote-1"></div></td>
+      <td><canvas id="c-vote-1" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-1', this.value)" 
+	       oninput="changeValue('vote-1', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-2"></div></td>
+      <td><div id="v-vote-2"></div></td>
+      <td><canvas id="c-vote-2" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-2', this.value)" 
+	       oninput="changeValue('vote-2', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-3"></div></td>
+      <td><div id="v-vote-3"></div></td>
+      <td><canvas id="c-vote-3" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-3', this.value)" 
+	       oninput="changeValue('vote-3', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-4"></div></td>
+      <td><div id="v-vote-4"></div></td>
+      <td><canvas id="c-vote-4" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-4', this.value)" 
+	       oninput="changeValue('vote-4', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-5"></div></td>
+      <td><div id="v-vote-5"></div></td>
+      <td><canvas id="c-vote-5" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-5', this.value)" 
+	       oninput="changeValue('vote-5', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-6"></div></td>
+      <td><div id="v-vote-6"></div></td>
+      <td><canvas id="c-vote-6" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-6', this.value)" 
+	       oninput="changeValue('vote-6', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-7"></div></td>
+      <td><div id="v-vote-7"></div></td>
+      <td><canvas id="c-vote-7" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-7', this.value)" 
+	       oninput="changeValue('vote-7', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-8"></div></td>
+      <td><div id="v-vote-8"></div></td>
+      <td><canvas id="c-vote-8" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-8', this.value)" 
+	       oninput="changeValue('vote-8', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-9"></div></td>
+      <td><div id="v-vote-9"></div></td>
+      <td><canvas id="c-vote-9" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-9', this.value)" 
+	       oninput="changeValue('vote-9', this.value)"
+	       >
+      </td>
+     </tr>
+     <!-- ================================= -->
+     <tr>
+      <td><div id="n-vote-10"></div></td>
+      <td><div id="v-vote-10"></div></td>
+      <td><canvas id="c-vote-10" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0" value="0"
+	       onchange="changeValue2('vote-10', this.value)" 
+	       oninput="changeValue('vote-10', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-11"></div></td>
+      <td><div id="v-vote-11"></div></td>
+      <td><canvas id="c-vote-11" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-11', this.value)" 
+	       oninput="changeValue('vote-11', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-12"></div></td>
+      <td><div id="v-vote-12"></div></td>
+      <td><canvas id="c-vote-12" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-12', this.value)" 
+	       oninput="changeValue('vote-12', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-13"></div></td>
+      <td><div id="v-vote-13"></div></td>
+      <td><canvas id="c-vote-13" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-13', this.value)" 
+	       oninput="changeValue('vote-13', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-14"></div></td>
+      <td><div id="v-vote-14"></div></td>
+      <td><canvas id="c-vote-14" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-14', this.value)" 
+	       oninput="changeValue('vote-14', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-15"></div></td>
+      <td><div id="v-vote-15"></div></td>
+      <td><canvas id="c-vote-15" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-15', this.value)" 
+	       oninput="changeValue('vote-15', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-16"></div></td>
+      <td><div id="v-vote-16"></div></td>
+      <td><canvas id="c-vote-16" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-16', this.value)" 
+	       oninput="changeValue('vote-16', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-17"></div></td>
+      <td><div id="v-vote-17"></div></td>
+      <td><canvas id="c-vote-17" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-17', this.value)" 
+	       oninput="changeValue('vote-17', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-18"></div></td>
+      <td><div id="v-vote-18"></div></td>
+      <td><canvas id="c-vote-18" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-18', this.value)" 
+	       oninput="changeValue('vote-18', this.value)"
+	       >
+      </td>
+     </tr>
+     <tr>
+      <td><div id="n-vote-19"></div></td>
+      <td><div id="v-vote-19"></div></td>
+      <td><canvas id="c-vote-19" width=200 height=20></canvas></td>
+      <td>
+	<input type="range" name="num" min="0" max="100" step="1" value="0"
+	       onchange="changeValue2('vote-19', this.value)" 
+	       oninput="changeValue('vote-19', this.value)"
+	       >
+      </td>
+     </tr>
+
+   </table>
+
+</body>
+</html>

@@ -1,0 +1,174 @@
+#-*- coding: utf-8 -*-
+@prefix fos:     <http://bizar.aitc.jp/ns/fos/0.1/> 
+@prefix acc:     <http://bizar.aitc.jp/ns/fos/0.1/accesscontrol/>
+@prefix :        <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
+@prefix lcl:     <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
+@prefix hub:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#>
+@prefix leaf:    <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/leaf#>
+@prefix array:   <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/array#>
+#
+@prefix thermo:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#thermo->
+@prefix light:      <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#light->
+@prefix cleaner:    <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#cleaner->
+@prefix facesensor: <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#facesensor->
+
+
+
+##デバイス定義
+# 温度計
+thermo:1
+	:温度	leaf:110;
+	fos:instant	leaf:111;
+	fos:datetime	leaf:112;
+	.
+thermo:2
+	:温度	leaf:120;
+	fos:instant	leaf:121;
+	fos:datetime	leaf:122;
+	.
+thermo:3
+	:温度	leaf:130;
+	fos:instant	leaf:131;
+	fos:datetime	leaf:132;
+	.
+thermo:4
+	:温度	leaf:140;
+	fos:instant	leaf:141;
+	fos:datetime	leaf:142;
+	.
+thermo:5
+	:温度	leaf:150;
+	fos:instant	leaf:151;
+	fos:datetime	leaf:152;
+	.
+
+# 照明
+light:1
+	:スイッチ	leaf:210;
+	fos:instant	leaf:211;
+	fos:datetime	leaf:212;
+	.
+light:2
+	:スイッチ	leaf:220;
+	fos:instant	leaf:221;
+	fos:datetime	leaf:222;
+	.
+light:3
+	:スイッチ	leaf:230;
+	fos:instant	leaf:231;
+	fos:datetime	leaf:232;
+	.
+light:4
+	:スイッチ	leaf:240;
+	fos:instant	leaf:241;
+	fos:datetime	leaf:242;
+	.
+light:5
+	:スイッチ	leaf:250;
+	fos:instant	leaf:251;
+	fos:datetime	leaf:252;
+	.
+
+#ルンバ
+cleaner:1
+	:x	leaf:310;
+	:y	leaf:311;
+	:モード leaf:312;
+	fos:instant	leaf:313;
+	:部屋   leaf:314;
+	.
+
+facesensor:1
+	:検出	array:410;
+	fos:instant	leaf:411;
+	.
+facesensor:2
+	:検出	array:420;
+	fos:instant	leaf:421;
+	.
+facesensor:3
+	:検出	array:430;
+	fos:instant	leaf:431;
+	.
+facesensor:4
+	:検出	array:440;
+	fos:instant	leaf:441;
+	.
+facesensor:5
+	:検出	array:450;
+	fos:instant	leaf:451;
+	.
+
+# 一覧
+_:device_index
+	fos:tag	:デバイス;
+	:登録	light:1;
+	:登録	light:2;
+	:登録	light:3;
+	:登録	light:4;
+	:登録	light:5;
+	:登録	thermo:1;
+	:登録	thermo:2;
+	:登録	thermo:3;
+	:登録	thermo:4;
+	:登録	thermo:5;
+	:登録	cleaner:1;
+	:登録	facesensor:1;
+	:登録	facesensor:2;
+	:登録	facesensor:3;
+	:登録	facesensor:4;
+	:登録	facesensor:5;
+	.
+
+
+## 部屋
+_:room-1
+	fos:tag	:居間;
+	:気温	thermo:1;
+	:照明	light:1;
+	:顔	facesensor:1;
+	.
+
+_:room-2
+	fos:tag	:キッチン;
+	:気温	thermo:2;
+	:照明	light:2;
+	:顔	facesensor:2;
+	.
+
+_:room-3
+	fos:tag	:寝室;
+	:気温	thermo:3;
+	:照明	light:3;
+	:顔	facesensor:3;
+	.
+
+_:room-4
+	fos:tag	:寝室;
+	:気温	thermo:4;
+	:照明	light:4;
+	:顔	facesensor:4;
+	.
+
+_:room-5
+	fos:tag	:階段;
+	:気温	thermo:5;
+	:照明	light:5;
+	:顔	facesensor:5;
+	.
+
+# 家の構造
+_:floor-1
+	fos:tag	:1F;
+	:構成		_:room-1;
+	:構成		_:room-2;
+	:構成		_:room-5;
+	.
+
+_:floor-1
+	fos:tag	:2F;
+	:構成		_:room-3;
+	:構成		_:room-4;
+	:構成		_:room-5;
+	.
+

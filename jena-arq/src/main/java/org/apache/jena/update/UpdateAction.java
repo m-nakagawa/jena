@@ -416,7 +416,7 @@ public class UpdateAction
         try
         {
             uProc.startRequest();
-        	context = RealtimeValueBroker.prepareUpdate(); // MNakagawa
+        	context = RealtimeValueBroker.prepareUpdate(true); // MNakagawa
             UpdateSink sink = null;
             try
             {

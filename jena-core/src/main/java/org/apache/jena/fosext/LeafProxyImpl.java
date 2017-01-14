@@ -21,9 +21,9 @@ package org.apache.jena.fosext;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.fosext.RealtimeValueBroker.Value;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.slf4j.Logger;
@@ -32,9 +32,10 @@ import org.slf4j.Logger;
  * @author m-nakagawa
  *
  */
-public class ValueContainer implements LeafProxy {
-    private final static Logger log = getLogger(RealtimeValueBroker.class);
+public class LeafProxyImpl implements LeafProxy {
+    private final static Logger log = getLogger(LeafProxy.class);
 
+    private static AtomicLong generation = new AtomicLong(0); // システムの状態番号 
 	private static final Node[] NULL_VALUE_NODE = new Node[1];
 	static {
 		NULL_VALUE_NODE[0] = NodeFactory.createLiteralByValue("", "", XSDDatatype.XSDstring);
@@ -45,7 +46,15 @@ public class ValueContainer implements LeafProxy {
 	private Node[] value;
 	private Instant instant; // 通常はHUBの方の時刻を使う。これは将来の拡張用
 
-	ValueContainer(String uri, boolean array) {
+	public static long getGeneration(){
+		return generation.incrementAndGet();
+	}
+	
+	public static long getLock(){
+		return 0;
+	}
+	
+	LeafProxyImpl(String uri, boolean array) {
 		this.uri = uri;
 		this.array = array;
 		if(this.array){
@@ -66,14 +75,14 @@ public class ValueContainer implements LeafProxy {
 	}
 
 	@Override
-	public void setCurrentValue(Value value, Instant instant){
+	public void setCurrentValue(LeafValue value, Instant instant){
 		this.instant = instant;
 		this.value = new Node[1];
 		this.value[0] = NodeFactory.createLiteralByValue(value.getValue(), value.getLang(), value.getDtype()); 
 	}
 
 	@Override
-	public void setCurrentValues(Value[] values, Instant instant){
+	public void setCurrentValues(LeafValue[] values, Instant instant){
 		this.instant = instant;
 		this.value = new Node[values.length];
 		for(int i = 0; i < values.length; ++i){

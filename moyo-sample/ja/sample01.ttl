@@ -1,0 +1,280 @@
+#-*- coding: utf-8 -*-
+@prefix fos:     <http://bizar.aitc.jp/ns/fos/0.1/> 
+@prefix acc:     <http://bizar.aitc.jp/ns/fos/0.1/accesscontrol/>
+@prefix :        <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
+@prefix lcl:     <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
+@prefix hub:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#>
+@prefix leaf:    <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/leaf#>
+@prefix array:   <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/array#>
+
+@prefix vote:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#vote->
+@prefix cnt:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#cnt->
+
+
+##デバイス定義
+vote:0
+	fos:instant	leaf:1;
+	:評価	leaf:2;
+	:ニックネーム leaf:3;
+	:色	leaf:4;
+	.
+vote:1
+	fos:instant	leaf:11;
+	:評価	leaf:12;
+	:ニックネーム leaf:13;
+	:色	leaf:14;
+	.
+vote:2
+	fos:instant	leaf:21;
+	:評価	leaf:22;
+	:ニックネーム leaf:23;
+	:色	leaf:24;
+	.
+vote:3
+	fos:instant	leaf:31;
+	:評価	leaf:32;
+	:ニックネーム leaf:33;
+	:色	leaf:34;
+	.
+vote:4
+	fos:instant	leaf:41;
+	:評価	leaf:42;
+	:ニックネーム leaf:43;
+	:色	leaf:44;
+	.
+vote:5
+	fos:instant	leaf:51;
+	:評価	leaf:52;
+	:ニックネーム leaf:53;
+	:色	leaf:54;
+	.
+vote:6
+	fos:instant	leaf:61;
+	:評価	leaf:62;
+	:ニックネーム leaf:63;
+	:色	leaf:64;
+	.
+vote:7
+	fos:instant	leaf:71;
+	:評価	leaf:72;
+	:ニックネーム leaf:73;
+	:色	leaf:74;
+	.
+vote:8
+	fos:instant	leaf:81;
+	:評価	leaf:82;
+	:ニックネーム leaf:83;
+	:色	leaf:84;
+	.
+vote:9
+	fos:instant	leaf:91;
+	:評価	leaf:92;
+	:ニックネーム leaf:93;
+	:色	leaf:94;
+	.
+vote:10
+	fos:instant	leaf:101;
+	:評価	leaf:102;
+	:ニックネーム leaf:103;
+	:色	leaf:104;
+	.
+vote:11
+	fos:instant	leaf:111;
+	:評価	leaf:112;
+	:ニックネーム leaf:113;
+	:色	leaf:114;
+	.
+vote:12
+	fos:instant	leaf:121;
+	:評価	leaf:122;
+	:ニックネーム leaf:123;
+	:色	leaf:124;
+	.
+vote:13
+	fos:instant	leaf:131;
+	:評価	leaf:132;
+	:ニックネーム leaf:133;
+	:色	leaf:134;
+	.
+vote:14
+	fos:instant	leaf:141;
+	:評価	leaf:142;
+	:ニックネーム leaf:143;
+	:色	leaf:144;
+	.
+vote:15
+	fos:instant	leaf:151;
+	:評価	leaf:152;
+	:ニックネーム leaf:153;
+	:色	leaf:154;
+	.
+vote:16
+	fos:instant	leaf:161;
+	:評価	leaf:162;
+	:ニックネーム leaf:163;
+	:色	leaf:164;
+	.
+vote:17
+	fos:instant	leaf:171;
+	:評価	leaf:172;
+	:ニックネーム leaf:173;
+	:色	leaf:174;
+	.
+vote:18
+	fos:instant	leaf:181;
+	:評価	leaf:182;
+	:ニックネーム leaf:183;
+	:色	leaf:184;
+	.
+vote:19
+	fos:instant	leaf:191;
+	:評価	leaf:192;
+	:ニックネーム leaf:193;
+	:色	leaf:194;
+	.
+
+cnt:0
+	fos:instant	leaf:901;
+	:総計	leaf:902;
+	.
+
+
+
+## 一覧
+_:device_index
+	fos:tag	lcl:索引;	
+	:構成	_:ref0;
+	:構成	_:ref1;
+	:構成	_:ref2;
+	:構成	_:ref3;
+	:構成	_:ref4;
+	:構成	_:ref5;
+	:構成	_:ref6;
+	:構成	_:ref7;
+	:構成	_:ref8;
+	:構成	_:ref9;
+	:構成	_:ref10;
+	:構成	_:ref11;
+	:構成	_:ref12;
+	:構成	_:ref13;
+	:構成	_:ref14;
+	:構成	_:ref15;
+	:構成	_:ref16;
+	:構成	_:ref17;
+	:構成	_:ref18;
+	:構成	_:ref19;
+	.
+
+_:ref0
+	fos:tag	lcl:device;
+	fos:tag	lcl:0;
+	:value	vote:0;
+	.
+_:ref1
+	fos:tag	lcl:device;
+	fos:tag	lcl:1;
+	:value	vote:1;
+	.
+_:ref2
+	fos:tag	lcl:device;
+	fos:tag	lcl:2;
+	:value	vote:2;
+	.
+_:ref3
+	fos:tag	lcl:device;
+	fos:tag	lcl:3;
+	:value	vote:3;
+	.
+_:ref4
+	fos:tag	lcl:device;
+	fos:tag	lcl:4;
+	:value	vote:4;
+	.
+_:ref5
+	fos:tag	lcl:device;
+	fos:tag	lcl:5;
+	:value	vote:5;
+	.
+_:ref6
+	fos:tag	lcl:device;
+	fos:tag	lcl:6;
+	:value	vote:6;
+	.
+_:ref7
+	fos:tag	lcl:device;
+	fos:tag	lcl:7;
+	:value	vote:7;
+	.
+_:ref8
+	fos:tag	lcl:device;
+	fos:tag	lcl:8;
+	:value	vote:8;
+	.
+_:ref9
+	fos:tag	lcl:device;
+	fos:tag	lcl:9;
+	:value	vote:9;
+	.
+_:ref10
+	fos:tag	lcl:device;
+	fos:tag	lcl:10;
+	:value	vote:10;
+	.
+_:ref11
+	fos:tag	lcl:device;
+	fos:tag	lcl:11;
+	:value	vote:11;
+	.
+_:ref12
+	fos:tag	lcl:device;
+	fos:tag	lcl:12;
+	:value	vote:12;
+	.
+_:ref13
+	fos:tag	lcl:device;
+	fos:tag	lcl:13;
+	:value	vote:13;
+	.
+_:ref14
+	fos:tag	lcl:device;
+	fos:tag	lcl:14;
+	:value	vote:14;
+	.
+_:ref15
+	fos:tag	lcl:device;
+	fos:tag	lcl:15;
+	:value	vote:15;
+	.
+_:ref16
+	fos:tag	lcl:device;
+	fos:tag	lcl:16;
+	:value	vote:16;
+	.
+_:ref17
+	fos:tag	lcl:device;
+	fos:tag	lcl:17;
+	:value	vote:17;
+	.
+_:ref18
+	fos:tag	lcl:device;
+	fos:tag	lcl:18;
+	:value	vote:18;
+	.
+_:ref19
+	fos:tag	lcl:device;
+	fos:tag	lcl:19;
+	:value	vote:19;
+	.
+_:cnt0
+	fos:tag	lcl:device;
+	fos:tag	lcl:20;
+	:value	cnt:0;
+	.
+_:cnt1
+	fos:tag	lcl:device;
+	fos:tag	lcl:21;
+	:value	<http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#_system>
+	.
+
+
+

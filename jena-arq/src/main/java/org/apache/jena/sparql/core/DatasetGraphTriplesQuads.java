@@ -51,6 +51,11 @@ public abstract class DatasetGraphTriplesQuads extends DatasetGraphBaseFind
 
     @Override
     final public void delete(Node g, Node s, Node p, Node o) {
+    	/*
+    	if(RealtimeValueBroker.removeProxy(g,s,p,o)){
+    		return;
+    	}
+    	*/
         if ( Quad.isDefaultGraph(g) )
             deleteFromDftGraph(s, p, o) ;
         else

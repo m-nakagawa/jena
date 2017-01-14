@@ -108,7 +108,7 @@ public class PMapTripleTable extends PMapTupleTable<ThreeTupleMap, Triple, TCons
     	//System.out.println(String.format("OrderedTupleTable#106 %s:%s:%s", x1, x2, x3));// MNakagawa
         //return OrderedTupleTable.apply(reverse, x1, x2, x3, MyTriple::new); // MNakagawa
     	Triple t = apply(reverse, x1, x2, x3, Triple::new);
-    	List<Node> nodes = RealtimeValueBroker.proxy2value(t.getObject());
+    	List<Node> nodes = RealtimeValueBroker.proxy2value(t.getSubject(), t.getPredicate(), t.getObject());
     	if(nodes != null){
     		List<Triple> ret = new ArrayList<>();
     		for(Node n : nodes){
