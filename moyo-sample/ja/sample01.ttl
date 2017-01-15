@@ -2,12 +2,11 @@
 @prefix fos:     <http://bizar.aitc.jp/ns/fos/0.1/> 
 @prefix acc:     <http://bizar.aitc.jp/ns/fos/0.1/accesscontrol/>
 @prefix :        <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
-@prefix lcl:     <http://bizar.aitc.jp/ns/fos/0.1/local/label#>
 @prefix hub:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#>
 @prefix leaf:    <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/leaf#>
 @prefix array:   <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/array#>
 
-@prefix vote:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#vote->
+@prefix vote:    <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#vote->
 @prefix cnt:     <http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#cnt->
 
 
@@ -142,7 +141,7 @@ cnt:0
 
 ## 一覧
 _:device_index
-	fos:tag	lcl:索引;	
+	fos:tag	:索引;	
 	:構成	_:ref0;
 	:構成	_:ref1;
 	:構成	_:ref2;
@@ -166,113 +165,113 @@ _:device_index
 	.
 
 _:ref0
-	fos:tag	lcl:device;
-	fos:tag	lcl:0;
+	fos:tag	:device;
+	fos:tag	:0;
 	:value	vote:0;
 	.
 _:ref1
-	fos:tag	lcl:device;
-	fos:tag	lcl:1;
+	fos:tag	:device;
+	fos:tag	:1;
 	:value	vote:1;
 	.
 _:ref2
-	fos:tag	lcl:device;
-	fos:tag	lcl:2;
+	fos:tag	:device;
+	fos:tag	:2;
 	:value	vote:2;
 	.
 _:ref3
-	fos:tag	lcl:device;
-	fos:tag	lcl:3;
+	fos:tag	:device;
+	fos:tag	:3;
 	:value	vote:3;
 	.
 _:ref4
-	fos:tag	lcl:device;
-	fos:tag	lcl:4;
+	fos:tag	:device;
+	fos:tag	:4;
 	:value	vote:4;
 	.
 _:ref5
-	fos:tag	lcl:device;
-	fos:tag	lcl:5;
+	fos:tag	:device;
+	fos:tag	:5;
 	:value	vote:5;
 	.
 _:ref6
-	fos:tag	lcl:device;
-	fos:tag	lcl:6;
+	fos:tag	:device;
+	fos:tag	:6;
 	:value	vote:6;
 	.
 _:ref7
-	fos:tag	lcl:device;
-	fos:tag	lcl:7;
+	fos:tag	:device;
+	fos:tag	:7;
 	:value	vote:7;
 	.
 _:ref8
-	fos:tag	lcl:device;
-	fos:tag	lcl:8;
+	fos:tag	:device;
+	fos:tag	:8;
 	:value	vote:8;
 	.
 _:ref9
-	fos:tag	lcl:device;
-	fos:tag	lcl:9;
+	fos:tag	:device;
+	fos:tag	:9;
 	:value	vote:9;
 	.
 _:ref10
-	fos:tag	lcl:device;
-	fos:tag	lcl:10;
+	fos:tag	:device;
+	fos:tag	:10;
 	:value	vote:10;
 	.
 _:ref11
-	fos:tag	lcl:device;
-	fos:tag	lcl:11;
+	fos:tag	:device;
+	fos:tag	:11;
 	:value	vote:11;
 	.
 _:ref12
-	fos:tag	lcl:device;
-	fos:tag	lcl:12;
+	fos:tag	:device;
+	fos:tag	:12;
 	:value	vote:12;
 	.
 _:ref13
-	fos:tag	lcl:device;
-	fos:tag	lcl:13;
+	fos:tag	:device;
+	fos:tag	:13;
 	:value	vote:13;
 	.
 _:ref14
-	fos:tag	lcl:device;
-	fos:tag	lcl:14;
+	fos:tag	:device;
+	fos:tag	:14;
 	:value	vote:14;
 	.
 _:ref15
-	fos:tag	lcl:device;
-	fos:tag	lcl:15;
+	fos:tag	:device;
+	fos:tag	:15;
 	:value	vote:15;
 	.
 _:ref16
-	fos:tag	lcl:device;
-	fos:tag	lcl:16;
+	fos:tag	:device;
+	fos:tag	:16;
 	:value	vote:16;
 	.
 _:ref17
-	fos:tag	lcl:device;
-	fos:tag	lcl:17;
+	fos:tag	:device;
+	fos:tag	:17;
 	:value	vote:17;
 	.
 _:ref18
-	fos:tag	lcl:device;
-	fos:tag	lcl:18;
+	fos:tag	:device;
+	fos:tag	:18;
 	:value	vote:18;
 	.
 _:ref19
-	fos:tag	lcl:device;
-	fos:tag	lcl:19;
+	fos:tag	:device;
+	fos:tag	:19;
 	:value	vote:19;
 	.
 _:cnt0
-	fos:tag	lcl:device;
-	fos:tag	lcl:20;
+	fos:tag	:device;
+	fos:tag	:20;
 	:value	cnt:0;
 	.
 _:cnt1
-	fos:tag	lcl:device;
-	fos:tag	lcl:21;
+	fos:tag	:device;
+	fos:tag	:21;
 	:value	<http://bizar.aitc.jp/ns/fos/0.1/local/proxy/hub#_system>
 	.
 
